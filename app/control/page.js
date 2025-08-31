@@ -1,0 +1,676 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import io from "socket.io-client";
+
+let socket;
+
+export default function ControlPage() {
+  const [allBibles, setAllBibles] = useState({}); // Store all fetched bibles
+  const [bibles, setBibles] = useState({}); // Filtered bibles based on language
+  const [availableLanguages, setAvailableLanguages] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("All"); // Default to 'All'
+  const [selectedBible, setSelectedBible] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [verses, setVerses] = useState([]);
+  const [selectedVerse, setSelectedVerse] = useState(null);
+  const [sortBy, setSortBy] = useState("book"); // Default sort by book
+  const [styles, setStyles] = useState({
+    backgroundColor: "transparent",
+    fontSize: 32,
+    fontFamily: "Arial",
+    textColor: "#000000",
+    textAlign: "center",
+    backgroundImage: "", // New state for background image URL
+    backgroundOpacity: 1, // New state for background opacity (0 to 1)
+    maxWidth: 800, // New state for max width
+    justifyContent: "center", // New state for horizontal alignment
+    alignItems: "center", // New state for vertical alignment
+  });
+
+  useEffect(() => {
+    // Initialize Socket.IO client
+    const socketInitializer = async () => {
+      socket = io();
+
+      socket.on("connect", () => {
+        console.log("Connected to socket.io server");
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Disconnected from socket.io server");
+      });
+    };
+    socketInitializer();
+
+    // Fetch all Bibles once
+    const fetchAllBibles = async () => {
+      try {
+        const res = await fetch("/api/bibles");
+        const data = await res.json();
+        setAllBibles(data.bibles);
+
+        // Extract unique languages
+        const languages = new Set(["All"]);
+        for (const shortname in data.bibles) {
+          if (data.bibles[shortname].metadata?.lang) {
+            languages.add(data.bibles[shortname].metadata.lang);
+          }
+        }
+        setAvailableLanguages(Array.from(languages).sort());
+      } catch (error) {
+        console.error("Failed to fetch bibles:", error);
+      }
+    };
+    fetchAllBibles();
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, []); // Run only once on mount
+
+  // Effect to filter bibles by language and set selected Bible
+  useEffect(() => {
+    let filteredBibles = {};
+    if (selectedLanguage === "All") {
+      filteredBibles = allBibles;
+    } else {
+      for (const shortname in allBibles) {
+        if (allBibles[shortname].metadata?.lang === selectedLanguage) {
+          filteredBibles[shortname] = allBibles[shortname];
+        }
+      }
+    }
+    setBibles(filteredBibles); // Update the 'bibles' state that the selector uses
+
+    // Set selectedBible to the first available in the filtered list, or null
+    if (Object.keys(filteredBibles).length > 0) {
+      setSelectedBible(Object.keys(filteredBibles)[0]);
+    } else {
+      setSelectedBible(null);
+    }
+  }, [selectedLanguage, allBibles]); // Re-run when language or allBibles changes
+
+  const bookAbbreviations = {
+    gen: "Genesis",
+    ex: "Exodus",
+    lev: "Leviticus",
+    num: "Numbers",
+    deut: "Deuteronomy",
+    josh: "Joshua",
+    judg: "Judges",
+    ruth: "Ruth",
+    "1 sam": "1 Samuel",
+    "2 sam": "2 Samuel",
+    "1 kgs": "1 Kings",
+    "2 kgs": "2 Kings",
+    "1 chr": "1 Chronicles",
+    "2 chr": "2 Chronicles",
+    ezra: "Ezra",
+    neh: "Nehemiah",
+    est: "Esther",
+    job: "Job",
+    ps: "Psalms",
+    prov: "Proverbs",
+    eccl: "Ecclesiastes",
+    song: "Song of Solomon",
+    isa: "Isaiah",
+    jer: "Jeremiah",
+    lam: "Lamentations",
+    ezek: "Ezekiel",
+    dan: "Daniel",
+    hos: "Hosea",
+    joel: "Joel",
+    amos: "Amos",
+    obad: "Obadiah",
+    jonah: "Jonah",
+    mic: "Micah",
+    nah: "Nahum",
+    hab: "Habakkuk",
+    zeph: "Zephaniah",
+    hag: "Haggai",
+    zech: "Zechariah",
+    mal: "Malachi",
+    matt: "Matthew",
+    mk: "Mark",
+    lk: "Luke",
+    jn: "John",
+    acts: "Acts",
+    rom: "Romans",
+    "1 cor": "1 Corinthians",
+    "2 cor": "2 Corinthians",
+    gal: "Galatians",
+    eph: "Ephesians",
+    phil: "Philippians",
+    col: "Colossians",
+    "1 thes": "1 Thessalonians",
+    "2 thes": "2 Thessalonians",
+    "1 tim": "1 Timothy",
+    "2 tim": "2 Timothy",
+    titus: "Titus",
+    phlm: "Philemon",
+    heb: "Hebrews",
+    jas: "James",
+    "1 pet": "1 Peter",
+    "2 pet": "2 Peter",
+    "1 jn": "1 John",
+    "2 jn": "2 John",
+    "3 jn": "3 John",
+    jude: "Jude",
+    rev: "Revelation",
+  };
+
+  // Effect to filter and sort verses based on search term, selected Bible, and sort option
+  useEffect(() => {
+    if (selectedBible && bibles[selectedBible]) {
+      const allVerses = bibles[selectedBible].verses;
+      let currentFilteredVerses = [];
+
+      if (searchTerm) {
+        let processedSearchTerm = searchTerm.toLowerCase();
+
+        // Check if search term is a book abbreviation
+        const matchedBook = Object.keys(bookAbbreviations).find((abbr) =>
+          processedSearchTerm.startsWith(abbr + " ")
+        );
+        if (matchedBook) {
+          const fullBookName = bookAbbreviations[matchedBook];
+          processedSearchTerm = processedSearchTerm.replace(
+            matchedBook,
+            fullBookName.toLowerCase()
+          );
+        }
+
+        currentFilteredVerses = allVerses.filter((verse) => {
+          const reference =
+            `${verse.book_name} ${verse.chapter}:${verse.verse}`.toLowerCase();
+          const text = verse.text.toLowerCase();
+          return (
+            reference.includes(processedSearchTerm) ||
+            text.includes(processedSearchTerm)
+          );
+        });
+      } else {
+        // If no search term, show all verses (or a limited number for performance)
+        // For now, let's show all if no search term, but this could be optimized for very large Bibles
+        currentFilteredVerses = allVerses;
+      }
+
+      // Apply sorting
+      const sortedVerses = [...currentFilteredVerses].sort((a, b) => {
+        if (sortBy === "book") {
+          if (a.book !== b.book) return a.book - b.book;
+          if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+          return a.verse - b.verse;
+        } else if (sortBy === "chapter") {
+          if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+          if (a.book !== b.book) return a.book - b.book; // Fallback to book if chapters are same
+          return a.verse - b.verse;
+        } else if (sortBy === "verse") {
+          if (a.verse !== b.verse) return a.verse - b.verse;
+          if (a.chapter !== b.chapter) return a.chapter - b.chapter; // Fallback to chapter
+          return a.book - b.book; // Fallback to book
+        }
+        return 0; // No sort
+      });
+      setVerses(sortedVerses);
+    } else {
+      setVerses([]); // Clear verses if no Bible is selected
+    }
+  }, [searchTerm, selectedBible, bibles, sortBy]); // Add sortBy to dependencies
+
+  // Function to handle Go Live
+  const goLive = () => {
+    if (socket && selectedVerse) {
+      socket.emit("setVerse", { verse: selectedVerse, styles });
+    }
+  };
+
+  // Function to handle Clear
+  const clearVerse = () => {
+    if (socket) {
+      socket.emit("clearVerse");
+      setSelectedVerse(null);
+    }
+  };
+
+  // Placeholder UI
+  return (
+    <div className="p-4 bg-background text-text min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-primary">
+        OBS Bible Plugin Control
+      </h1>
+
+      <div className="mb-4">
+        <label
+          htmlFor="language-select"
+          className="block text-sm font-medium text-text"
+        >
+          Select Language:
+        </label>
+        <select
+          id="language-select"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          value={selectedLanguage}
+          onChange={(e) => setSelectedLanguage(e.target.value)}
+        >
+          {availableLanguages.map((lang) => (
+            <option key={lang} value={lang}>
+              {lang}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4">
+        <label
+          htmlFor="bible-select"
+          className="block text-sm font-medium text-text"
+        >
+          Select Bible:
+        </label>
+        <select
+          id="bible-select"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          value={selectedBible || ""}
+          onChange={(e) => setSelectedBible(e.target.value)}
+        >
+          {Object.keys(bibles).map((shortname) => (
+            <option key={shortname} value={shortname}>
+              {bibles[shortname].metadata?.name || shortname}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4">
+        <label
+          htmlFor="search-bar"
+          className="block text-sm font-medium text-text"
+        >
+          Search Verse:
+        </label>
+        <input
+          type="text"
+          id="search-bar"
+          className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          placeholder="e.g., John 3:16 or Genesis"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="mb-4">
+        <label
+          htmlFor="sort-by"
+          className="block text-sm font-medium text-text"
+        >
+          Sort By:
+        </label>
+        <select
+          id="sort-by"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="book">Book</option>
+          <option value="chapter">Chapter</option>
+          <option value="verse">Verse</option>
+        </select>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-2 text-accent">Verse List</h2>
+        <div className="border rounded-md p-2 h-48 overflow-y-auto bg-gray-50">
+          {verses.length > 0 ? (
+            verses.map((verse, index) => (
+              <div
+                key={index}
+                className={`p-2 cursor-pointer hover:bg-gray-200 ${
+                  selectedVerse === verse ? "bg-blue-100" : ""
+                }`}
+                onClick={() => setSelectedVerse(verse)}
+                onDoubleClick={() => {
+                  setSelectedVerse(verse);
+                  goLive();
+                }} // Double-click to go live
+              >
+                <p className="font-semibold">
+                  {verse.book_name} {verse.chapter}:{verse.verse}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {verse.text.substring(0, 100)}...
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">
+              {searchTerm
+                ? "No verses found for your search."
+                : "Search for verses to see results here."}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-2 text-accent">
+          Preview Panel
+        </h2>
+
+        <div
+          className="border rounded-md p-4 min-h-[100px] flex items-center justify-center relative overflow-hidden"
+          style={{
+            backgroundColor: styles.backgroundColor,
+            fontSize: `${styles.fontSize}px`,
+            fontFamily: styles.fontFamily,
+            color: styles.textColor,
+            textAlign: styles.textAlign,
+            justifyContent: styles.justifyContent,
+            alignItems: styles.alignItems,
+            // Conditional background image is handled by the inner div
+          }}
+        >
+          {/* Background image overlay with opacity */}
+          {styles.backgroundImage && (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${styles.backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                opacity:
+                  styles.backgroundOpacity !== undefined
+                    ? styles.backgroundOpacity
+                    : 1,
+              }}
+            />
+          )}
+
+          {/* Verse text */}
+          {selectedVerse ? (
+            <p
+              className="relative z-10"
+              style={{ maxWidth: `${styles.maxWidth}px` }}
+            >
+              {selectedVerse.text} - {selectedVerse.book_name}{" "}
+              {selectedVerse.chapter}:{selectedVerse.verse}
+            </p>
+          ) : (
+            <p className="text-gray-500 relative z-10">
+              Select a verse to preview.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-2 text-accent">
+          Customization Controls
+        </h2>
+        {/* Background Color */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-color"
+            className="block text-sm font-medium text-text"
+          >
+            Background Color:
+          </label>
+          <input
+            type="color"
+            id="bg-color"
+            value={
+              styles.backgroundColor === "transparent"
+                ? "#000000"
+                : styles.backgroundColor
+            }
+            onChange={(e) =>
+              setStyles({ ...styles, backgroundColor: e.target.value })
+            }
+          />
+          <button
+            onClick={() =>
+              setStyles({ ...styles, backgroundColor: "transparent" })
+            }
+            className="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-900 shadow-sm hover:opacity-80"
+          >
+            Transparent
+          </button>
+        </div>
+
+        {/* Background Image URL */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-image-url"
+            className="block text-sm font-medium text-text"
+          >
+            Background Image URL:
+          </label>
+          <input
+            type="text"
+            id="bg-image-url"
+            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+            placeholder="e.g., https://example.com/image.jpg"
+            value={styles.backgroundImage}
+            onChange={(e) =>
+              setStyles({ ...styles, backgroundImage: e.target.value })
+            }
+          />
+        </div>
+
+        
+
+        {/* Background Opacity */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-opacity"
+            className="block text-sm font-medium text-text"
+          >
+            Background Opacity:
+          </label>
+          <input
+            type="range"
+            id="bg-opacity"
+            min="0"
+            max="1"
+            step="0.01"
+            value={styles.backgroundOpacity}
+            onChange={(e) =>
+              setStyles({
+                ...styles,
+                backgroundOpacity: parseFloat(e.target.value),
+              })
+            }
+            className="w-full"
+          />
+          <span>{(styles.backgroundOpacity * 100).toFixed(0)}%</span>
+        </div>
+
+        {/* Font Size */}
+        <div className="mb-2">
+          <label
+            htmlFor="font-size"
+            className="block text-sm font-medium text-text"
+          >
+            Font Size:
+          </label>
+          <input
+            type="range"
+            id="font-size"
+            min="16"
+            max="100"
+            value={styles.fontSize}
+            onChange={(e) =>
+              setStyles({ ...styles, fontSize: parseInt(e.target.value) })
+            }
+            className="w-full"
+          />
+          <span>{styles.fontSize}px</span>
+        </div>
+
+        {/* Font Family */}
+        <div className="mb-2">
+          <label
+            htmlFor="font-family"
+            className="block text-sm font-medium text-text"
+          >
+            Font Family:
+          </label>
+          <select
+            id="font-family"
+            value={styles.fontFamily}
+            onChange={(e) =>
+              setStyles({ ...styles, fontFamily: e.target.value })
+            }
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          >
+            <option>Arial</option>
+            <option>Verdana</option>
+            <option>Georgia</option>
+            <option>Times New Roman</option>
+            <option>Courier New</option>
+          </select>
+        </div>
+
+        {/* Text Color */}
+        <div className="mb-2">
+          <label
+            htmlFor="text-color"
+            className="block text-sm font-medium text-text"
+          >
+            Text Color:
+          </label>
+          <input
+            type="color"
+            id="text-color"
+            value={styles.textColor}
+            onChange={(e) =>
+              setStyles({ ...styles, textColor: e.target.value })
+            }
+          />
+        </div>
+
+        {/* Max Width */}
+        <div className="mb-2">
+          <label
+            htmlFor="max-width"
+            className="block text-sm font-medium text-text"
+          >
+            Max Width (px):
+          </label>
+          <input
+            type="number"
+            id="max-width"
+            min="100"
+            max="1920"
+            value={styles.maxWidth}
+            onChange={(e) =>
+              setStyles({ ...styles, maxWidth: parseInt(e.target.value) })
+            }
+            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          />
+        </div>
+
+        {/* Horizontal Alignment */}
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-text">
+            Horizontal Alignment:
+          </label>
+          <div className="mt-1 flex space-x-2">
+            <button
+              onClick={() =>
+                setStyles({ ...styles, justifyContent: "flex-start" })
+              }
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.justifyContent === "flex-start"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Left
+            </button>
+            <button
+              onClick={() => setStyles({ ...styles, justifyContent: "center" })}
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.justifyContent === "center"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Center
+            </button>
+            <button
+              onClick={() =>
+                setStyles({ ...styles, justifyContent: "flex-end" })
+              }
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.justifyContent === "flex-end"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Right
+            </button>
+          </div>
+        </div>
+
+        {/* Vertical Alignment */}
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-text">
+            Vertical Alignment:
+          </label>
+          <div className="mt-1 flex space-x-2">
+            <button
+              onClick={() => setStyles({ ...styles, alignItems: "flex-start" })}
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.alignItems === "flex-start"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Top
+            </button>
+            <button
+              onClick={() => setStyles({ ...styles, alignItems: "center" })}
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.alignItems === "center"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Middle
+            </button>
+            <button
+              onClick={() => setStyles({ ...styles, alignItems: "flex-end" })}
+              className={`px-3 py-1 border rounded-md text-sm ${
+                styles.alignItems === "flex-end"
+                  ? "bg-primary text-white"
+                  : "border-gray-300 text-gray-700"
+              } hover:opacity-80`}
+            >
+              Bottom
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex space-x-4">
+        <button
+          onClick={goLive}
+          className="bg-primary text-white px-4 py-2 rounded-md hover:opacity-80"
+        >
+          Go Live
+        </button>
+        <button
+          onClick={clearVerse}
+          className="bg-red-500 text-white px-4 py-2 rounded-md hover:opacity-80"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+}
