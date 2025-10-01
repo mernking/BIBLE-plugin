@@ -236,6 +236,17 @@ export default function ControlPage() {
     }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setStyles({ ...styles, backgroundImage: event.target.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Placeholder UI
   return (
     <div className="p-4 bg-background text-text min-h-screen">
@@ -337,10 +348,10 @@ export default function ControlPage() {
                   goLive();
                 }} // Double-click to go live
               >
-                <p className="font-semibold">
+                <p className="font-semibold text-background">
                   {verse.book_name} {verse.chapter}:{verse.verse}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-background/70">
                   {verse.text.substring(0, 100)}...
                 </p>
               </div>
@@ -454,14 +465,33 @@ export default function ControlPage() {
             id="bg-image-url"
             className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
             placeholder="e.g., https://example.com/image.jpg"
-            value={styles.backgroundImage}
+            value={
+              styles.backgroundImage.startsWith("data:")
+                ? ""
+                : styles.backgroundImage
+            }
             onChange={(e) =>
               setStyles({ ...styles, backgroundImage: e.target.value })
             }
           />
         </div>
 
-        
+        {/* Background Image File */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-image-file"
+            className="block text-sm font-medium text-text"
+          >
+            Or upload from computer:
+          </label>
+          <input
+            type="file"
+            id="bg-image-file"
+            accept="image/*"
+            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+            onChange={handleImageUpload}
+          />
+        </div>
 
         {/* Background Opacity */}
         <div className="mb-2">
