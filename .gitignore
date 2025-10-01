@@ -14,7 +14,13 @@
 /coverage
 
 # next.js
-/.next/
+.next
+node_modules
+bibles.xlsx
+frech.zip
+truth_20250830_213500_870404.zip
+truth_20250830_214510_549220.zip
+bible.db
 /out/
 
 # production
