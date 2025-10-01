@@ -22,7 +22,9 @@ export default function ControlPage() {
     textColor: "#000000",
     textAlign: "center",
     backgroundImage: "", // New state for background image URL
+    backgroundVideo: "", // New state for background video URL
     backgroundOpacity: 1, // New state for background opacity (0 to 1)
+    videoOpacity: 1, // New state for video opacity (0 to 1)
     maxWidth: 800, // New state for max width
     justifyContent: "center", // New state for horizontal alignment
     alignItems: "center", // New state for vertical alignment
@@ -241,7 +243,18 @@ export default function ControlPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setStyles({ ...styles, backgroundImage: event.target.result });
+        setStyles({ ...styles, backgroundImage: event.target.result, backgroundVideo: "" });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setStyles({ ...styles, backgroundVideo: event.target.result, backgroundImage: "" });
       };
       reader.readAsDataURL(file);
     }
@@ -401,6 +414,21 @@ export default function ControlPage() {
             />
           )}
 
+          {/* Background video overlay with opacity */}
+          {styles.backgroundVideo && (
+            <video
+              className="absolute inset-0 w-full h-full object-cover"
+              src={styles.backgroundVideo}
+              autoPlay
+              loop
+              muted
+              style={{
+                opacity:
+                  styles.videoOpacity !== undefined ? styles.videoOpacity : 1,
+              }}
+            />
+          )}
+
           {/* Verse text */}
           {selectedVerse ? (
             <p
@@ -471,7 +499,7 @@ export default function ControlPage() {
                 : styles.backgroundImage
             }
             onChange={(e) =>
-              setStyles({ ...styles, backgroundImage: e.target.value })
+              setStyles({ ...styles, backgroundImage: e.target.value, backgroundVideo: "" })
             }
           />
         </div>
@@ -517,6 +545,73 @@ export default function ControlPage() {
             className="w-full"
           />
           <span>{(styles.backgroundOpacity * 100).toFixed(0)}%</span>
+        </div>
+
+        {/* Background Video URL */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-video-url"
+            className="block text-sm font-medium text-text"
+          >
+            Background Video URL:
+          </label>
+          <input
+            type="text"
+            id="bg-video-url"
+            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+            placeholder="e.g., https://example.com/video.mp4"
+            value={
+              styles.backgroundVideo.startsWith("data:")
+                ? ""
+                : styles.backgroundVideo
+            }
+            onChange={(e) =>
+              setStyles({ ...styles, backgroundVideo: e.target.value, backgroundImage: "" })
+            }
+          />
+        </div>
+
+        {/* Background Video File */}
+        <div className="mb-2">
+          <label
+            htmlFor="bg-video-file"
+            className="block text-sm font-medium text-text"
+          >
+            Or upload from computer:
+          </label>
+          <input
+            type="file"
+            id="bg-video-file"
+            accept="video/*"
+            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+            onChange={handleVideoUpload}
+          />
+        </div>
+
+        {/* Video Opacity */}
+        <div className="mb-2">
+          <label
+            htmlFor="video-opacity"
+            className="block text-sm font-medium text-text"
+          >
+            Video Opacity:
+          </label>
+          <input
+            type="range"
+            id="video-opacity"
+            min="0"
+            max="1"
+            step="0.01"
+            value={styles.videoOpacity}
+            onChange={(e) =>
+              setStyles({
+                ...styles,
+                videoOpacity: parseFloat(e.target.value),
+              })
+            }
+            className="w-full"
+          />
+          <span>{(styles.videoOpacity * 100).toFixed(0)}%</span>
         </div>
 
         {/* Font Size */}

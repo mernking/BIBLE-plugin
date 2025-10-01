@@ -67,8 +67,22 @@ export default function OverlayPage() {
         />
       )}
 
+      {/* Background video overlay with opacity */}
+      {styles.backgroundVideo && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src={styles.backgroundVideo}
+          autoPlay
+          loop
+          muted
+          style={{
+            opacity: styles.videoOpacity !== undefined ? styles.videoOpacity : 1,
+          }}
+        />
+      )}
+
       {/* Solid color fallback (no opacity, just color) */}
-      {!styles.backgroundImage && styles.backgroundColor && (
+      {!styles.backgroundImage && !styles.backgroundVideo && styles.backgroundColor && (
         <div
           className="absolute inset-0"
           style={{
