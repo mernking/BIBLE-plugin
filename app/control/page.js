@@ -15,6 +15,7 @@ export default function ControlPage() {
   const [verses, setVerses] = useState([]);
   const [selectedVerse, setSelectedVerse] = useState(null);
   const [sortBy, setSortBy] = useState("book"); // Default sort by book
+  const [backgroundType, setBackgroundType] = useState("image"); // New state for background type
   const [styles, setStyles] = useState({
     backgroundColor: "transparent",
     fontSize: 32,
@@ -23,8 +24,7 @@ export default function ControlPage() {
     textAlign: "center",
     backgroundImage: "", // New state for background image URL
     backgroundVideo: "", // New state for background video URL
-    backgroundOpacity: 1, // New state for background opacity (0 to 1)
-    videoOpacity: 1, // New state for video opacity (0 to 1)
+    backgroundOpacity: 1, // Unified opacity for both image and video
     maxWidth: 800, // New state for max width
     justifyContent: "center", // New state for horizontal alignment
     alignItems: "center", // New state for vertical alignment
@@ -276,7 +276,7 @@ export default function ControlPage() {
         </label>
         <select
           id="language-select"
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value)}
         >
@@ -297,7 +297,7 @@ export default function ControlPage() {
         </label>
         <select
           id="bible-select"
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
           value={selectedBible || ""}
           onChange={(e) => setSelectedBible(e.target.value)}
         >
@@ -319,7 +319,7 @@ export default function ControlPage() {
         <input
           type="text"
           id="search-bar"
-          className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
           placeholder="e.g., John 3:16 or Genesis"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -335,7 +335,7 @@ export default function ControlPage() {
         </label>
         <select
           id="sort-by"
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
         >
@@ -347,13 +347,13 @@ export default function ControlPage() {
 
       <div className="mb-4">
         <h2 className="text-xl font-semibold mb-2 text-accent">Verse List</h2>
-        <div className="border rounded-md p-2 h-48 overflow-y-auto bg-gray-50">
+        <div className="border rounded-md p-2 h-48 overflow-y-auto bg-secondary/20">
           {verses.length > 0 ? (
             verses.map((verse, index) => (
               <div
                 key={index}
-                className={`p-2 cursor-pointer hover:bg-gray-200 ${
-                  selectedVerse === verse ? "bg-blue-100" : ""
+                className={`p-2 cursor-pointer hover:bg-primary/50 ${
+                  selectedVerse === verse ? "bg-primary" : ""
                 }`}
                 onClick={() => setSelectedVerse(verse)}
                 onDoubleClick={() => {
@@ -361,16 +361,16 @@ export default function ControlPage() {
                   goLive();
                 }} // Double-click to go live
               >
-                <p className="font-semibold text-background">
+                <p className="font-semibold text-text">
                   {verse.book_name} {verse.chapter}:{verse.verse}
                 </p>
-                <p className="text-sm text-background/70">
+                <p className="text-sm text-text/70">
                   {verse.text.substring(0, 100)}...
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-gray-500">
+            <p className="text-text/50">
               {searchTerm
                 ? "No verses found for your search."
                 : "Search for verses to see results here."}
@@ -385,7 +385,7 @@ export default function ControlPage() {
         </h2>
 
         <div
-          className="border rounded-md p-4 min-h-[100px] flex items-center justify-center relative overflow-hidden"
+          className="border rounded-md p-4 min-h-[100px] flex items-center justify-center relative overflow-hidden border-primary"
           style={{
             backgroundColor: styles.backgroundColor,
             fontSize: `${styles.fontSize}px`,
@@ -424,7 +424,9 @@ export default function ControlPage() {
               muted
               style={{
                 opacity:
-                  styles.videoOpacity !== undefined ? styles.videoOpacity : 1,
+                  styles.backgroundOpacity !== undefined
+                    ? styles.backgroundOpacity
+                    : 1,
               }}
             />
           )}
@@ -452,75 +454,117 @@ export default function ControlPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Background Controls */}
-          <fieldset className="border border-gray-300 p-4 rounded-md">
+          <fieldset className="border border-secondary p-4 rounded-md">
             <legend className="text-lg font-semibold text-accent px-2">Background</legend>
-            <div className="mb-2">
-              <label
-                htmlFor="bg-color"
-                className="block text-sm font-medium text-text"
-              >
-                Background Color:
-              </label>
-              <input
-                type="color"
-                id="bg-color"
-                value={
-                  styles.backgroundColor === "transparent"
-                    ? "#000000"
-                    : styles.backgroundColor
-                }
-                onChange={(e) =>
-                  setStyles({ ...styles, backgroundColor: e.target.value })
-                }
-              />
+
+            <div className="flex space-x-2 mb-4">
               <button
-                onClick={() =>
-                  setStyles({ ...styles, backgroundColor: "transparent" })
-                }
-                className="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-900 shadow-sm hover:opacity-80"
+                onClick={() => setBackgroundType("image")}
+                className={`px-3 py-1 border rounded-md text-sm ${
+                  backgroundType === "image"
+                    ? "bg-primary text-white"
+                    : "border-primary text-text"
+                } hover:opacity-80`}
               >
-                Transparent
+                Image
+              </button>
+              <button
+                onClick={() => setBackgroundType("video")}
+                className={`px-3 py-1 border rounded-md text-sm ${
+                  backgroundType === "video"
+                    ? "bg-primary text-white"
+                    : "border-primary text-text"
+                } hover:opacity-80`}
+              >
+                Video
               </button>
             </div>
 
-            <div className="mb-2">
-              <label
-                htmlFor="bg-image-url"
-                className="block text-sm font-medium text-text"
-              >
-                Background Image URL:
-              </label>
-              <input
-                type="text"
-                id="bg-image-url"
-                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-                placeholder="e.g., https://example.com/image.jpg"
-                value={
-                  styles.backgroundImage.startsWith("data:")
-                    ? ""
-                    : styles.backgroundImage
-                }
-                onChange={(e) =>
-                  setStyles({ ...styles, backgroundImage: e.target.value, backgroundVideo: "" })
-                }
-              />
-            </div>
+            {backgroundType === "image" && (
+              <>
+                <div className="mb-2">
+                  <label
+                    htmlFor="bg-image-url"
+                    className="block text-sm font-medium text-text"
+                  >
+                    Background Image URL:
+                  </label>
+                  <input
+                    type="text"
+                    id="bg-image-url"
+                    className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
+                    placeholder="e.g., https://example.com/image.jpg"
+                    value={
+                      styles.backgroundImage.startsWith("data:")
+                        ? ""
+                        : styles.backgroundImage
+                    }
+                    onChange={(e) =>
+                      setStyles({ ...styles, backgroundImage: e.target.value, backgroundVideo: "" })
+                    }
+                  />
+                </div>
 
-            <div className="mb-2">
-              <label
-                htmlFor="bg-image-file"
-                className="block text-sm font-medium text-text"
-              >
-                Or upload from computer:
-              </label>
-              <input
-                type="file"
-                id="bg-image-file"
-                accept="image/*"
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
-                onChange={handleImageUpload}
-              />
-            </div>
+                <div className="mb-2">
+                  <label
+                    htmlFor="bg-image-file"
+                    className="block text-sm font-medium text-text"
+                  >
+                    Or upload from computer:
+                  </label>
+                  <input
+                    type="file"
+                    id="bg-image-file"
+                    accept="image/*"
+                    className="mt-1 block w-full text-sm text-text file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              </>
+            )}
+
+            {backgroundType === "video" && (
+              <>
+                <div className="mb-2">
+                  <label
+                    htmlFor="bg-video-url"
+                    className="block text-sm font-medium text-text"
+                  >
+                    Background Video URL:
+                  </label>
+                  <input
+                    type="text"
+                    id="bg-video-url"
+                    className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
+                    placeholder="e.g., https://example.com/video.mp4"
+                    value={
+                      styles.backgroundVideo.startsWith("data:")
+                        ? ""
+                        : styles.backgroundVideo
+                    }
+                    onChange={(e) =>
+                      setStyles({ ...styles, backgroundVideo: e.target.value, backgroundImage: "" })
+                    }
+                  />
+                </div>
+
+                <div className="mb-2">
+                  <label
+                    htmlFor="bg-video-file"
+                    className="block text-sm font-medium text-text"
+                  >
+                    Or upload from computer:
+                  </label>
+                  <input
+                    type="file"
+                    id="bg-video-file"
+                    accept="video/*"
+                    className="mt-1 block w-full text-sm text-text file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+                    onChange={handleVideoUpload}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="mb-2">
               <label
@@ -542,78 +586,44 @@ export default function ControlPage() {
                     backgroundOpacity: parseFloat(e.target.value),
                   })
                 }
-                className="w-full"
+                className="w-full accent-primary"
               />
               <span>{(styles.backgroundOpacity * 100).toFixed(0)}%</span>
             </div>
 
             <div className="mb-2">
               <label
-                htmlFor="bg-video-url"
+                htmlFor="bg-color"
                 className="block text-sm font-medium text-text"
               >
-                Background Video URL:
+                Background Color:
               </label>
               <input
-                type="text"
-                id="bg-video-url"
-                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-                placeholder="e.g., https://example.com/video.mp4"
+                type="color"
+                id="bg-color"
                 value={
-                  styles.backgroundVideo.startsWith("data:")
-                    ? ""
-                    : styles.backgroundVideo
+                  styles.backgroundColor === "transparent"
+                    ? "#000000"
+                    : styles.backgroundColor
                 }
                 onChange={(e) =>
-                  setStyles({ ...styles, backgroundVideo: e.target.value, backgroundImage: "" })
+                  setStyles({ ...styles, backgroundColor: e.target.value })
                 }
+                className="accent-primary"
               />
-            </div>
-
-            <div className="mb-2">
-              <label
-                htmlFor="bg-video-file"
-                className="block text-sm font-medium text-text"
-              >
-                Or upload from computer:
-              </label>
-              <input
-                type="file"
-                id="bg-video-file"
-                accept="video/*"
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
-                onChange={handleVideoUpload}
-              />
-            </div>
-
-            <div className="mb-2">
-              <label
-                htmlFor="video-opacity"
-                className="block text-sm font-medium text-text"
-              >
-                Video Opacity:
-              </label>
-              <input
-                type="range"
-                id="video-opacity"
-                min="0"
-                max="1"
-                step="0.01"
-                value={styles.videoOpacity}
-                onChange={(e) =>
-                  setStyles({
-                    ...styles,
-                    videoOpacity: parseFloat(e.target.value),
-                  })
+              <button
+                onClick={() =>
+                  setStyles({ ...styles, backgroundColor: "transparent" })
                 }
-                className="w-full"
-              />
-              <span>{(styles.videoOpacity * 100).toFixed(0)}%</span>
+                className="ml-2 px-3 py-1 border border-primary rounded-md text-sm bg-background text-text shadow-sm hover:opacity-80"
+              >
+                Transparent
+              </button>
             </div>
           </fieldset>
 
           {/* Typography Controls */}
-          <fieldset className="border border-gray-300 p-4 rounded-md">
+          <fieldset className="border border-secondary p-4 rounded-md">
             <legend className="text-lg font-semibold text-accent px-2">Typography</legend>
             <div className="mb-2">
               <label
@@ -631,7 +641,7 @@ export default function ControlPage() {
                 onChange={(e) =>
                   setStyles({ ...styles, fontSize: parseInt(e.target.value) })
                 }
-                className="w-full"
+                className="w-full accent-primary"
               />
               <span>{styles.fontSize}px</span>
             </div>
@@ -649,7 +659,7 @@ export default function ControlPage() {
                 onChange={(e) =>
                   setStyles({ ...styles, fontFamily: e.target.value })
                 }
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
               >
                 <option>Arial</option>
                 <option>Verdana</option>
@@ -673,12 +683,13 @@ export default function ControlPage() {
                 onChange={(e) =>
                   setStyles({ ...styles, textColor: e.target.value })
                 }
+                className="accent-primary"
               />
             </div>
           </fieldset>
 
           {/* Layout Controls */}
-          <fieldset className="border border-gray-300 p-4 rounded-md">
+          <fieldset className="border border-secondary p-4 rounded-md">
             <legend className="text-lg font-semibold text-accent px-2">Layout</legend>
             <div className="mb-2">
               <label
@@ -696,7 +707,7 @@ export default function ControlPage() {
                 onChange={(e) =>
                   setStyles({ ...styles, maxWidth: parseInt(e.target.value) })
                 }
-                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-primary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-background text-text shadow-sm"
               />
             </div>
 
@@ -712,7 +723,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.justifyContent === "flex-start"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Left
@@ -722,7 +733,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.justifyContent === "center"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Center
@@ -734,7 +745,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.justifyContent === "flex-end"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Right
@@ -752,7 +763,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.alignItems === "flex-start"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Top
@@ -762,7 +773,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.alignItems === "center"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Middle
@@ -772,7 +783,7 @@ export default function ControlPage() {
                   className={`px-3 py-1 border rounded-md text-sm ${
                     styles.alignItems === "flex-end"
                       ? "bg-primary text-white"
-                      : "border-gray-300 text-gray-700"
+                      : "border-primary text-text"
                   } hover:opacity-80`}
                 >
                   Bottom

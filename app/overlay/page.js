@@ -59,6 +59,7 @@ export default function OverlayPage() {
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
+            backgroundColor: styles.backgroundColor,
             opacity:
               styles.backgroundOpacity !== undefined
                 ? styles.backgroundOpacity
@@ -76,20 +77,26 @@ export default function OverlayPage() {
           loop
           muted
           style={{
-            opacity: styles.videoOpacity !== undefined ? styles.videoOpacity : 1,
+            backgroundColor: styles.backgroundColor,
+            opacity:
+              styles.backgroundOpacity !== undefined
+                ? styles.backgroundOpacity
+                : 1,
           }}
         />
       )}
 
       {/* Solid color fallback (no opacity, just color) */}
-      {!styles.backgroundImage && !styles.backgroundVideo && styles.backgroundColor && (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundColor: styles.backgroundColor,
-          }}
-        />
-      )}
+      {!styles.backgroundImage &&
+        !styles.backgroundVideo &&
+        styles.backgroundColor && (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundColor: styles.backgroundColor,
+            }}
+          />
+        )}
 
       {/* Verse text on top */}
       {verseData && (
