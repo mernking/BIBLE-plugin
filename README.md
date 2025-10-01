@@ -1,5 +1,8 @@
 # OBS Bible Plugin
 
+bible data download link 
+https://www.biblesupersearch.com/bible-downloads/
+
 This is a Next.js project that functions as an OBS (Open Broadcaster Software) Bible Plugin, allowing users to display Bible verses on their streams with customizable styling. It uses Socket.IO for real-time communication between the control dashboard and the OBS overlay.
 ![alt text](image.png)
 ## Features
