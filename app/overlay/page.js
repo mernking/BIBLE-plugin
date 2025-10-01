@@ -46,6 +46,7 @@ export default function OverlayPage() {
     <div
       className="w-screen h-screen flex relative overflow-hidden"
       style={{
+        backgroundColor: styles.backgroundColor,
         justifyContent: styles.justifyContent || "center",
         alignItems: styles.alignItems || "center",
       }}
