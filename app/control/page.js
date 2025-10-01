@@ -450,335 +450,336 @@ export default function ControlPage() {
         <h2 className="text-xl font-semibold mb-2 text-accent">
           Customization Controls
         </h2>
-        {/* Background Color */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-color"
-            className="block text-sm font-medium text-text"
-          >
-            Background Color:
-          </label>
-          <input
-            type="color"
-            id="bg-color"
-            value={
-              styles.backgroundColor === "transparent"
-                ? "#000000"
-                : styles.backgroundColor
-            }
-            onChange={(e) =>
-              setStyles({ ...styles, backgroundColor: e.target.value })
-            }
-          />
-          <button
-            onClick={() =>
-              setStyles({ ...styles, backgroundColor: "transparent" })
-            }
-            className="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-900 shadow-sm hover:opacity-80"
-          >
-            Transparent
-          </button>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Background Controls */}
+          <fieldset className="border border-gray-300 p-4 rounded-md">
+            <legend className="text-lg font-semibold text-accent px-2">Background</legend>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-color"
+                className="block text-sm font-medium text-text"
+              >
+                Background Color:
+              </label>
+              <input
+                type="color"
+                id="bg-color"
+                value={
+                  styles.backgroundColor === "transparent"
+                    ? "#000000"
+                    : styles.backgroundColor
+                }
+                onChange={(e) =>
+                  setStyles({ ...styles, backgroundColor: e.target.value })
+                }
+              />
+              <button
+                onClick={() =>
+                  setStyles({ ...styles, backgroundColor: "transparent" })
+                }
+                className="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-900 shadow-sm hover:opacity-80"
+              >
+                Transparent
+              </button>
+            </div>
 
-        {/* Background Image URL */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-image-url"
-            className="block text-sm font-medium text-text"
-          >
-            Background Image URL:
-          </label>
-          <input
-            type="text"
-            id="bg-image-url"
-            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-            placeholder="e.g., https://example.com/image.jpg"
-            value={
-              styles.backgroundImage.startsWith("data:")
-                ? ""
-                : styles.backgroundImage
-            }
-            onChange={(e) =>
-              setStyles({ ...styles, backgroundImage: e.target.value, backgroundVideo: "" })
-            }
-          />
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-image-url"
+                className="block text-sm font-medium text-text"
+              >
+                Background Image URL:
+              </label>
+              <input
+                type="text"
+                id="bg-image-url"
+                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+                placeholder="e.g., https://example.com/image.jpg"
+                value={
+                  styles.backgroundImage.startsWith("data:")
+                    ? ""
+                    : styles.backgroundImage
+                }
+                onChange={(e) =>
+                  setStyles({ ...styles, backgroundImage: e.target.value, backgroundVideo: "" })
+                }
+              />
+            </div>
 
-        {/* Background Image File */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-image-file"
-            className="block text-sm font-medium text-text"
-          >
-            Or upload from computer:
-          </label>
-          <input
-            type="file"
-            id="bg-image-file"
-            accept="image/*"
-            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
-            onChange={handleImageUpload}
-          />
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-image-file"
+                className="block text-sm font-medium text-text"
+              >
+                Or upload from computer:
+              </label>
+              <input
+                type="file"
+                id="bg-image-file"
+                accept="image/*"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+                onChange={handleImageUpload}
+              />
+            </div>
 
-        {/* Background Opacity */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-opacity"
-            className="block text-sm font-medium text-text"
-          >
-            Background Opacity:
-          </label>
-          <input
-            type="range"
-            id="bg-opacity"
-            min="0"
-            max="1"
-            step="0.01"
-            value={styles.backgroundOpacity}
-            onChange={(e) =>
-              setStyles({
-                ...styles,
-                backgroundOpacity: parseFloat(e.target.value),
-              })
-            }
-            className="w-full"
-          />
-          <span>{(styles.backgroundOpacity * 100).toFixed(0)}%</span>
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-opacity"
+                className="block text-sm font-medium text-text"
+              >
+                Background Opacity:
+              </label>
+              <input
+                type="range"
+                id="bg-opacity"
+                min="0"
+                max="1"
+                step="0.01"
+                value={styles.backgroundOpacity}
+                onChange={(e) =>
+                  setStyles({
+                    ...styles,
+                    backgroundOpacity: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full"
+              />
+              <span>{(styles.backgroundOpacity * 100).toFixed(0)}%</span>
+            </div>
 
-        {/* Background Video URL */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-video-url"
-            className="block text-sm font-medium text-text"
-          >
-            Background Video URL:
-          </label>
-          <input
-            type="text"
-            id="bg-video-url"
-            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-            placeholder="e.g., https://example.com/video.mp4"
-            value={
-              styles.backgroundVideo.startsWith("data:")
-                ? ""
-                : styles.backgroundVideo
-            }
-            onChange={(e) =>
-              setStyles({ ...styles, backgroundVideo: e.target.value, backgroundImage: "" })
-            }
-          />
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-video-url"
+                className="block text-sm font-medium text-text"
+              >
+                Background Video URL:
+              </label>
+              <input
+                type="text"
+                id="bg-video-url"
+                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+                placeholder="e.g., https://example.com/video.mp4"
+                value={
+                  styles.backgroundVideo.startsWith("data:")
+                    ? ""
+                    : styles.backgroundVideo
+                }
+                onChange={(e) =>
+                  setStyles({ ...styles, backgroundVideo: e.target.value, backgroundImage: "" })
+                }
+              />
+            </div>
 
-        {/* Background Video File */}
-        <div className="mb-2">
-          <label
-            htmlFor="bg-video-file"
-            className="block text-sm font-medium text-text"
-          >
-            Or upload from computer:
-          </label>
-          <input
-            type="file"
-            id="bg-video-file"
-            accept="video/*"
-            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
-            onChange={handleVideoUpload}
-          />
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="bg-video-file"
+                className="block text-sm font-medium text-text"
+              >
+                Or upload from computer:
+              </label>
+              <input
+                type="file"
+                id="bg-video-file"
+                accept="video/*"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
+                onChange={handleVideoUpload}
+              />
+            </div>
 
-        {/* Video Opacity */}
-        <div className="mb-2">
-          <label
-            htmlFor="video-opacity"
-            className="block text-sm font-medium text-text"
-          >
-            Video Opacity:
-          </label>
-          <input
-            type="range"
-            id="video-opacity"
-            min="0"
-            max="1"
-            step="0.01"
-            value={styles.videoOpacity}
-            onChange={(e) =>
-              setStyles({
-                ...styles,
-                videoOpacity: parseFloat(e.target.value),
-              })
-            }
-            className="w-full"
-          />
-          <span>{(styles.videoOpacity * 100).toFixed(0)}%</span>
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="video-opacity"
+                className="block text-sm font-medium text-text"
+              >
+                Video Opacity:
+              </label>
+              <input
+                type="range"
+                id="video-opacity"
+                min="0"
+                max="1"
+                step="0.01"
+                value={styles.videoOpacity}
+                onChange={(e) =>
+                  setStyles({
+                    ...styles,
+                    videoOpacity: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full"
+              />
+              <span>{(styles.videoOpacity * 100).toFixed(0)}%</span>
+            </div>
+          </fieldset>
 
-        {/* Font Size */}
-        <div className="mb-2">
-          <label
-            htmlFor="font-size"
-            className="block text-sm font-medium text-text"
-          >
-            Font Size:
-          </label>
-          <input
-            type="range"
-            id="font-size"
-            min="16"
-            max="100"
-            value={styles.fontSize}
-            onChange={(e) =>
-              setStyles({ ...styles, fontSize: parseInt(e.target.value) })
-            }
-            className="w-full"
-          />
-          <span>{styles.fontSize}px</span>
-        </div>
+          {/* Typography Controls */}
+          <fieldset className="border border-gray-300 p-4 rounded-md">
+            <legend className="text-lg font-semibold text-accent px-2">Typography</legend>
+            <div className="mb-2">
+              <label
+                htmlFor="font-size"
+                className="block text-sm font-medium text-text"
+              >
+                Font Size:
+              </label>
+              <input
+                type="range"
+                id="font-size"
+                min="16"
+                max="100"
+                value={styles.fontSize}
+                onChange={(e) =>
+                  setStyles({ ...styles, fontSize: parseInt(e.target.value) })
+                }
+                className="w-full"
+              />
+              <span>{styles.fontSize}px</span>
+            </div>
 
-        {/* Font Family */}
-        <div className="mb-2">
-          <label
-            htmlFor="font-family"
-            className="block text-sm font-medium text-text"
-          >
-            Font Family:
-          </label>
-          <select
-            id="font-family"
-            value={styles.fontFamily}
-            onChange={(e) =>
-              setStyles({ ...styles, fontFamily: e.target.value })
-            }
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-          >
-            <option>Arial</option>
-            <option>Verdana</option>
-            <option>Georgia</option>
-            <option>Times New Roman</option>
-            <option>Courier New</option>
-          </select>
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="font-family"
+                className="block text-sm font-medium text-text"
+              >
+                Font Family:
+              </label>
+              <select
+                id="font-family"
+                value={styles.fontFamily}
+                onChange={(e) =>
+                  setStyles({ ...styles, fontFamily: e.target.value })
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+              >
+                <option>Arial</option>
+                <option>Verdana</option>
+                <option>Georgia</option>
+                <option>Times New Roman</option>
+                <option>Courier New</option>
+              </select>
+            </div>
 
-        {/* Text Color */}
-        <div className="mb-2">
-          <label
-            htmlFor="text-color"
-            className="block text-sm font-medium text-text"
-          >
-            Text Color:
-          </label>
-          <input
-            type="color"
-            id="text-color"
-            value={styles.textColor}
-            onChange={(e) =>
-              setStyles({ ...styles, textColor: e.target.value })
-            }
-          />
-        </div>
+            <div className="mb-2">
+              <label
+                htmlFor="text-color"
+                className="block text-sm font-medium text-text"
+              >
+                Text Color:
+              </label>
+              <input
+                type="color"
+                id="text-color"
+                value={styles.textColor}
+                onChange={(e) =>
+                  setStyles({ ...styles, textColor: e.target.value })
+                }
+              />
+            </div>
+          </fieldset>
 
-        {/* Max Width */}
-        <div className="mb-2">
-          <label
-            htmlFor="max-width"
-            className="block text-sm font-medium text-text"
-          >
-            Max Width (px):
-          </label>
-          <input
-            type="number"
-            id="max-width"
-            min="100"
-            max="1920"
-            value={styles.maxWidth}
-            onChange={(e) =>
-              setStyles({ ...styles, maxWidth: parseInt(e.target.value) })
-            }
-            className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
-          />
-        </div>
+          {/* Layout Controls */}
+          <fieldset className="border border-gray-300 p-4 rounded-md">
+            <legend className="text-lg font-semibold text-accent px-2">Layout</legend>
+            <div className="mb-2">
+              <label
+                htmlFor="max-width"
+                className="block text-sm font-medium text-text"
+              >
+                Max Width (px):
+              </label>
+              <input
+                type="number"
+                id="max-width"
+                min="100"
+                max="1920"
+                value={styles.maxWidth}
+                onChange={(e) =>
+                  setStyles({ ...styles, maxWidth: parseInt(e.target.value) })
+                }
+                className="mt-1 block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white text-gray-900 shadow-sm"
+              />
+            </div>
 
-        {/* Horizontal Alignment */}
-        <div className="mb-2">
-          <label className="block text-sm font-medium text-text">
-            Horizontal Alignment:
-          </label>
-          <div className="mt-1 flex space-x-2">
-            <button
-              onClick={() =>
-                setStyles({ ...styles, justifyContent: "flex-start" })
-              }
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.justifyContent === "flex-start"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Left
-            </button>
-            <button
-              onClick={() => setStyles({ ...styles, justifyContent: "center" })}
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.justifyContent === "center"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Center
-            </button>
-            <button
-              onClick={() =>
-                setStyles({ ...styles, justifyContent: "flex-end" })
-              }
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.justifyContent === "flex-end"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Right
-            </button>
-          </div>
-        </div>
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-text">
+                Horizontal Alignment:
+              </label>
+              <div className="mt-1 flex space-x-2">
+                <button
+                  onClick={() =>
+                    setStyles({ ...styles, justifyContent: "flex-start" })
+                  }
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.justifyContent === "flex-start"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Left
+                </button>
+                <button
+                  onClick={() => setStyles({ ...styles, justifyContent: "center" })}
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.justifyContent === "center"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Center
+                </button>
+                <button
+                  onClick={() =>
+                    setStyles({ ...styles, justifyContent: "flex-end" })
+                  }
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.justifyContent === "flex-end"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Right
+                </button>
+              </div>
+            </div>
 
-        {/* Vertical Alignment */}
-        <div className="mb-2">
-          <label className="block text-sm font-medium text-text">
-            Vertical Alignment:
-          </label>
-          <div className="mt-1 flex space-x-2">
-            <button
-              onClick={() => setStyles({ ...styles, alignItems: "flex-start" })}
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.alignItems === "flex-start"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Top
-            </button>
-            <button
-              onClick={() => setStyles({ ...styles, alignItems: "center" })}
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.alignItems === "center"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Middle
-            </button>
-            <button
-              onClick={() => setStyles({ ...styles, alignItems: "flex-end" })}
-              className={`px-3 py-1 border rounded-md text-sm ${
-                styles.alignItems === "flex-end"
-                  ? "bg-primary text-white"
-                  : "border-gray-300 text-gray-700"
-              } hover:opacity-80`}
-            >
-              Bottom
-            </button>
-          </div>
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-text">
+                Vertical Alignment:
+              </label>
+              <div className="mt-1 flex space-x-2">
+                <button
+                  onClick={() => setStyles({ ...styles, alignItems: "flex-start" })}
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.alignItems === "flex-start"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Top
+                </button>
+                <button
+                  onClick={() => setStyles({ ...styles, alignItems: "center" })}
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.alignItems === "center"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Middle
+                </button>
+                <button
+                  onClick={() => setStyles({ ...styles, alignItems: "flex-end" })}
+                  className={`px-3 py-1 border rounded-md text-sm ${
+                    styles.alignItems === "flex-end"
+                      ? "bg-primary text-white"
+                      : "border-gray-300 text-gray-700"
+                  } hover:opacity-80`}
+                >
+                  Bottom
+                </button>
+              </div>
+            </div>
+          </fieldset>
         </div>
       </div>
 
