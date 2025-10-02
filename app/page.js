@@ -7,16 +7,16 @@ export default function HomePage() {
       ? `${window.location.origin}/overlay`
       : "http://localhost:3000/overlay";
 
-  const copyToClipboard = () => {
-    navigator.clipboard
-      .writeText(overlayUrl)
-      .then(() => {
+  const copyToClipboard = async (textToCopy) => {
+    if (navigator?.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
         alert("Overlay URL copied to clipboard!");
-      })
-      .catch((err) => {
-        console.error("Failed to copy: ", err);
-        alert("Failed to copy URL. Please copy it manually: " + overlayUrl);
-      });
+        return;
+      } catch (err) {
+        console.error("Clipboard API failed:", err);
+      }
+    }
   };
 
   return (
@@ -46,7 +46,7 @@ export default function HomePage() {
               className="flex-grow p-2 text-sm bg-gray-50 text-gray-800 focus:outline-none"
             />
             <button
-              onClick={copyToClipboard}
+              onClick={() => copyToClipboard(overlayUrl)} // ✅ pass overlayUrl
               className="bg-primary text-white px-4 py-2 text-sm hover:opacity-80 transition-opacity duration-200"
             >
               Copy
