@@ -7,7 +7,7 @@ This is a Next.js project that functions as an OBS (Open Broadcaster Software) B
 ![alt text](image.png)
 ## Features
 
-*   **Real-time Verse Display:** Show Bible verses on your OBS stream.
+*   **Real-time Verse/hymn Display:** Show Bible verses on your OBS stream.
 *   **Customizable Styling:** Adjust font size, font family, text color, background color, background image (from URL), background opacity, and text alignment.
 *   **Control Dashboard:** A web-based interface to select Bibles, search verses, preview, and control the display.
 
