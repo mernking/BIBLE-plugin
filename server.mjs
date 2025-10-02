@@ -1,7 +1,7 @@
-const { createServer } = require("http");
-const { parse } = require("url");
-const next = require("next");
-const { Server } = require("socket.io");
+import { createServer } from "http";
+import { parse } from "url";
+import next from "next";
+import { Server } from "socket.io";
 
 const dev = process.env.NODE_ENV !== "production";
 // Bind to your Wi-Fi IP so other devices can connect
@@ -35,13 +35,23 @@ app.prepare().then(() => {
     console.log(`Socket connected: ${socket.id}`);
 
     socket.on("setVerse", (data) => {
-      console.log("setVerse received:", data);
+      console.log("setVerse received on server:", JSON.stringify(data, null, 2));
       io.emit("updateVerse", data);
     });
 
     socket.on("clearVerse", () => {
       console.log("clearVerse received");
       io.emit("clearVerse");
+    });
+
+    socket.on("setHymn", (data) => {
+      console.log("setHymn received on server:", JSON.stringify(data, null, 2));
+      io.emit("setHymn", data);
+    });
+
+    socket.on("clearHymn", () => {
+      console.log("clearHymn received");
+      io.emit("clearHymn");
     });
 
     socket.on("disconnect", () => {

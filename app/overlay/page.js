@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import io from "socket.io-client";
@@ -7,6 +7,7 @@ let socket;
 
 export default function OverlayPage() {
   const [verseData, setVerseData] = useState(null);
+  const [hymnData, setHymnData] = useState(null);
   const [styles, setStyles] = useState({});
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function OverlayPage() {
 
       socket.on("updateVerse", (data) => {
         console.log("Overlay received updateVerse:", data);
+        setHymnData(null);
         setVerseData(data.verse);
         setStyles(data.styles);
       });
@@ -26,6 +28,19 @@ export default function OverlayPage() {
       socket.on("clearVerse", () => {
         console.log("Overlay received clearVerse");
         setVerseData(null);
+        setStyles({});
+      });
+
+      socket.on("setHymn", (data) => {
+        console.log("Overlay received setHymn:", data);
+        setVerseData(null);
+        setHymnData(data.hymn);
+        setStyles(data.styles);
+      });
+
+      socket.on("clearHymn", () => {
+        console.log("Overlay received clearHymn");
+        setHymnData(null);
         setStyles({});
       });
 
@@ -51,7 +66,6 @@ export default function OverlayPage() {
         alignItems: styles.alignItems || "center",
       }}
     >
-      {/* Background layer with optional opacity */}
       {styles.backgroundImage && (
         <div
           className="absolute inset-0"
@@ -69,7 +83,6 @@ export default function OverlayPage() {
         />
       )}
 
-      {/* Background video overlay with opacity */}
       {styles.backgroundVideo && (
         <video
           className="absolute inset-0 w-full h-full object-cover"
@@ -87,7 +100,6 @@ export default function OverlayPage() {
         />
       )}
 
-      {/* Solid color fallback (no opacity, just color) */}
       {!styles.backgroundImage &&
         !styles.backgroundVideo &&
         styles.backgroundColor && (
@@ -99,7 +111,6 @@ export default function OverlayPage() {
           />
         )}
 
-      {/* Verse text on top */}
       {verseData && (
         <div
           className="relative p-4 rounded-lg z-10"
@@ -115,6 +126,28 @@ export default function OverlayPage() {
           <p className="text-sm mt-2">
             {verseData.book_name} {verseData.chapter}:{verseData.verse}
           </p>
+        </div>
+      )}
+
+      {hymnData && (
+        <div
+          className="relative p-4 rounded-lg z-10"
+          style={{
+            fontSize: `${styles.fontSize || 32}px`,
+            fontFamily: styles.fontFamily || "sans-serif",
+            color: styles.textColor || "#fff",
+            textAlign: styles.textAlign || "center",
+            maxWidth: `${styles.maxWidth || 800}px`,
+          }}
+        >
+          {/* <p className="font-bold">{hymnData.title}</p> */}
+          {/* <div className="text-sm mt-2" dangerouslySetInnerHTML={{ __html: hymnData.verse.replace(/\n/g, '<br />') }} /> */}
+          <div
+            className=""
+            dangerouslySetInnerHTML={{
+              __html: hymnData.verse.replace(/\n/g, "<br />"),
+            }}
+          />
         </div>
       )}
     </div>

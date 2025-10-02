@@ -1,0 +1,1 @@
+https://search.churchmotiongraphics.com/solr/media/select?facet=true&facet.field=categories&facet.field=tempo&facet.field=width&facet.field=duration&facet.field=added&facet.limit=20&facet.mincount=1&fq=type:%22Still+Background%22&fq=categories:%22Abstract%22&fq=libraries:%22cmg%22&json.nl=map&nsort=&q=*:*&rows=6878&sort=added+desc&start=0&v=1759389310
