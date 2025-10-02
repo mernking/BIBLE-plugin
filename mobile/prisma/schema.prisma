@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Bible {
+  id        Int     @id @default(autoincrement())
+  name      String
+  shortname String  @unique
+  lang      String?
+  verses    Verse[] @relation("BibleVerses")
+}
+
+model Verse {
+  id          Int     @id @default(autoincrement())
+  bibleId     Int
+  bible       Bible   @relation("BibleVerses", fields: [bibleId], references: [id])
+  bookName    String
+  bookNumber  Int
+  chapter     Int
+  verse       Int
+  text        String
+}
+
+model Hymn {
+  id                  Int      @id @default(autoincrement())
+  title               String
+  author              String?
+  meter               String?
+  tuneName            String?
+  verses              String
+  chorus              String?
+  addedChorus         String?
+  sourceFile          String?
+  titleWithHymnNumber String?
+  sound               String?
+  category            String?
+}
