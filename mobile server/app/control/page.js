@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import io from 'socket.io-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import BibleControl from './BibleControl';
@@ -8,7 +8,7 @@ import HymnControl from './HymnControl';
 
 let socket;
 
-export default function ControlPage() {
+function ControlPageContent() {
   const [view, setView] = useState('bible'); // 'bible' or 'hymn'
   const [currentApiKey, setCurrentApiKey] = useState(null);
   const [overlayConnected, setOverlayConnected] = useState(false);
@@ -79,5 +79,13 @@ export default function ControlPage() {
 
       {currentApiKey && (view === 'bible' ? <BibleControl socket={socket} apiKey={currentApiKey} overlayConnected={overlayConnected} /> : <HymnControl socket={socket} apiKey={currentApiKey} overlayConnected={overlayConnected} />)}
     </div>
+  );
+}
+
+export default function ControlPage() {
+  return (
+    <Suspense fallback={<div>Loading control panel...</div>}>
+      <ControlPageContent />
+    </Suspense>
   );
 }

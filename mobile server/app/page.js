@@ -1,21 +1,23 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import io from "socket.io-client";
 import { toast } from "react-toastify";
 
-let socket;
-
 export default function HomePage() {
+  console.log("HomePage component rendered.");
   const [apiKey, setApiKey] = useState(null);
   const [overlayUrl, setOverlayUrl] = useState("");
   const router = useRouter();
+  const socketRef = useRef(null); // Use useRef for the socket instance
 
-  const navigateToControl = useCallback(() => {
+  const navigateToControl = () => {
     if (apiKey) {
       router.push(`/control?key=${apiKey}`);
     }
-  }, [apiKey, router]);
+  };
+
+  console.log(`/control?key=${apiKey}`);
 
   useEffect(() => {
     console.log("useEffect: Starting HomePage setup...");
@@ -38,28 +40,34 @@ export default function HomePage() {
 
         const serverUrl =
           process.env.NEXT_PUBLIC_SERVER_URL || window.location.origin;
-        socket = io(serverUrl, {
+        socketRef.current = io(serverUrl, {
           query: { apiKey: currentApiKey, type: "home" },
           transports: ["websocket"],
         });
-        console.log("Socket initialized:", socket);
+        console.log("Socket initialized:", socketRef.current);
 
         console.log("Attaching socket event listeners...");
-        socket.on("connect", () => {
+        socketRef.current.on("connect", () => {
           console.log("Home page connected to socket.io server");
-          console.log("Socket ID:", socket.id);
+          console.log("Socket ID:", socketRef.current.id);
         });
-        socket.on("disconnect", () =>
+        socketRef.current.on("disconnect", () =>
           console.log("Home page disconnected from socket.io server")
         );
 
-        socket.on("overlayConnected", () => {
-          console.log("overlayConnected event received on home page. Redirecting...");
+        socketRef.current.on("overlayConnected", () => {
+          console.log(
+            "overlayConnected event received on home page. Redirecting..."
+          );
           toast.success("Overlay Connected! Redirecting to control panel.");
-          navigateToControl();
+          if (currentApiKey) {
+            router.push(`/control?key=${currentApiKey}`);
+          } else {
+            console.log({ message: "no api key" });
+          }
         });
 
-        socket.on("connect_error", (error) => {
+        socketRef.current.on("connect_error", (error) => {
           console.error("Home page socket connection error:", error.message);
           toast.error(`Socket connection error: ${error.message}`);
         });
@@ -74,11 +82,11 @@ export default function HomePage() {
 
     return () => {
       console.log("useEffect cleanup: Disconnecting socket if it exists.");
-      if (socket) {
-        socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
       }
     };
-  }, [router]);
+  }, []); // Empty dependency array to run once on mount
 
   const copyToClipboard = async (textToCopy) => {
     if (navigator?.clipboard?.writeText) {

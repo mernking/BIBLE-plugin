@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capacitor Control</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .disconnected {
+            color: red;
+        }
+        .connected {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Capacitor Control Page</h1>
+        <p>API Key: <span id="apiKeyDisplay">Loading...</span></p>
+        <p>Overlay Status: <span id="overlayStatus" class="disconnected">Disconnected</span></p>
+        
+        <div style="margin-top: 20px;">
+            <button id="bibleControl">Bible Control (Placeholder)</button>
+            <button id="hymnControl">Hymn Control (Placeholder)</button>
+        </div>
+    </div>
+
+    <script>
+        // !!! IMPORTANT: Change this to your Next.js server IP/domain when deploying to a device !!!
+        // Example: const API_SERVER_URL = "http://192.168.1.100:3000";
+        const API_SERVER_URL = "http://localhost:3000"; 
+        let socket = null;
+        let currentApiKey = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Capacitor Control: DOMContentLoaded");
+            const apiKeyDisplay = document.getElementById('apiKeyDisplay');
+            const overlayStatus = document.getElementById('overlayStatus');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            currentApiKey = urlParams.get('key');
+
+            if (!currentApiKey) {
+                apiKeyDisplay.textContent = "Error: API Key missing!";
+                overlayStatus.textContent = "Cannot connect without API Key.";
+                overlayStatus.className = "disconnected";
+                console.error("Capacitor Control: API Key missing in URL. Cannot initialize socket.");
+                return;
+            }
+
+            apiKeyDisplay.textContent = currentApiKey;
+            console.log("Capacitor Control: API Key from URL:", currentApiKey);
+
+            // Initialize Socket.IO connection
+            console.log("Capacitor Control: Initializing Socket.IO connection to", API_SERVER_URL);
+            socket = io(API_SERVER_URL, {
+                query: { apiKey: currentApiKey, type: 'mobile' }, // Using 'mobile' type for control page
+                transports: ['websocket'],
+            });
+            console.log("Capacitor Control: Socket initialized.");
+
+            socket.on('connect', () => {
+                console.log("Capacitor Control: Connected to socket.io server.");
+            });
+
+            socket.on('disconnect', () => {
+                console.log("Capacitor Control: Disconnected from socket.io server.");
+                overlayStatus.textContent = "Disconnected";
+                overlayStatus.className = "disconnected";
+            });
+
+            socket.on('overlayConnected', () => {
+                console.log("Capacitor Control: Overlay Connected!");
+                overlayStatus.textContent = "Connected";
+                overlayStatus.className = "connected";
+            });
+
+            socket.on('overlayDisconnected', () => {
+                console.log("Capacitor Control: Overlay Disconnected!");
+                overlayStatus.textContent = "Disconnected";
+                overlayStatus.className = "disconnected";
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error("Capacitor Control: Socket connection error:", error.message);
+                overlayStatus.textContent = `Connection Error: ${error.message}`;
+                overlayStatus.className = "disconnected";
+            });
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                console.log("Capacitor Control: Disconnecting socket on beforeunload.");
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>
