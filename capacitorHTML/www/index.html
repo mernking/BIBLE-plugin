@@ -1,151 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capacitor Home</title>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="./global.css" />
     <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-        }
+      body {
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+      }
+      .container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #status {
+        margin-top: 10px;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Capacitor Home Page</h1>
-        <p>API Key: <span id="apiKeyDisplay">Loading...</span></p>
-        <p>Overlay URL:</p>
-        <input type="text" id="overlayUrlInput" readonly>
-        <button id="copyButton">Copy Overlay URL</button>
-        <button id="manualControl">Go to Control (Manual)</button>
-        <p id="status">Waiting for overlay connection...</p>
+      <h1>Capacitor Home Page</h1>
+      <p>API Key: <span id="apiKeyDisplay">Loading...</span></p>
+      <p>Overlay URL:</p>
+      <input type="text" id="overlayUrlInput" readonly />
+      <button id="copyButton">Copy Overlay URL</button>
+      <button id="manualControl">Go to Control (Manual)</button>
+      <p id="status">Waiting for overlay connection...</p>
     </div>
 
     <script>
-        // !!! IMPORTANT: Change this to your Next.js server IP/domain when deploying to a device !!!
-        // Example: const API_SERVER_URL = "http://192.168.1.100:3000";
-        const API_SERVER_URL = "http://localhost:3000"; 
-        let currentApiKey = null;
-        let socket = null;
+      // !!! IMPORTANT: Change this to your Next.js server IP/domain when deploying to a device !!!
+      // Example: const API_SERVER_URL = "http://192.168.1.100:3000";
+      const API_SERVER_URL = "https://release-referenced-athletics-early.trycloudflare.com";
+      let currentApiKey = null;
+      let socket = null;
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log("Capacitor Home: DOMContentLoaded");
-            const apiKeyDisplay = document.getElementById('apiKeyDisplay');
-            const overlayUrlInput = document.getElementById('overlayUrlInput');
-            const statusElement = document.getElementById('status');
-            const copyButton = document.getElementById('copyButton');
-            const manualControlButton = document.getElementById('manualControl');
+      document.addEventListener("DOMContentLoaded", async () => {
+        console.log("Capacitor Home: DOMContentLoaded");
+        const apiKeyDisplay = document.getElementById("apiKeyDisplay");
+        const overlayUrlInput = document.getElementById("overlayUrlInput");
+        const statusElement = document.getElementById("status");
+        const copyButton = document.getElementById("copyButton");
+        const manualControlButton = document.getElementById("manualControl");
 
-            copyButton.addEventListener('click', () => {
-                if (overlayUrlInput.value) {
-                    navigator.clipboard.writeText(overlayUrlInput.value)
-                        .then(() => alert("Overlay URL copied!"))
-                        .catch(err => console.error("Failed to copy URL:", err));
-                }
-            });
-
-            manualControlButton.addEventListener('click', () => {
-                if (currentApiKey) {
-                    window.location.href = `./control.html?key=${currentApiKey}`;
-                }
-            });
-
-            try {
-                console.log("Capacitor Home: Fetching API Key from", `${API_SERVER_URL}/api/generate-api-key`);
-                const res = await fetch(`${API_SERVER_URL}/api/generate-api-key`);
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                const data = await res.json();
-                currentApiKey = data.apiKey;
-                apiKeyDisplay.textContent = currentApiKey;
-                console.log("Capacitor Home: Fetched API Key:", currentApiKey);
-
-                const generatedOverlayUrl = `${API_SERVER_URL}/overlay?key=${currentApiKey}`;
-                overlayUrlInput.value = generatedOverlayUrl;
-                console.log("Capacitor Home: Generated Overlay URL:", generatedOverlayUrl);
-
-                // Initialize Socket.IO connection
-                console.log("Capacitor Home: Initializing Socket.IO connection to", API_SERVER_URL);
-                socket = io(API_SERVER_URL, {
-                    query: { apiKey: currentApiKey, type: 'home' },
-                    transports: ['websocket'],
-                });
-                console.log("Capacitor Home: Socket initialized.");
-
-                socket.on('connect', () => {
-                    console.log("Capacitor Home: Connected to socket.io server.");
-                    statusElement.textContent = "Connected to server. Waiting for overlay...";
-                });
-
-                socket.on('disconnect', () => {
-                    console.log("Capacitor Home: Disconnected from socket.io server.");
-                    statusElement.textContent = "Disconnected from server.";
-                });
-
-                socket.on('overlayConnected', () => {
-                    console.log("Capacitor Home: Overlay Connected! Redirecting to control.html...");
-                    statusElement.textContent = "Overlay Connected! Redirecting...";
-                    // Redirect to control page
-                    window.location.href = `./control.html?key=${currentApiKey}`;
-                });
-
-                socket.on('connect_error', (error) => {
-                    console.error("Capacitor Home: Socket connection error:", error.message);
-                    statusElement.textContent = `Connection Error: ${error.message}`;
-                });
-
-            } catch (error) {
-                console.error("Capacitor Home: Failed to initialize:", error);
-                apiKeyDisplay.textContent = "Error";
-                statusElement.textContent = "Failed to initialize.";
-            }
+        copyButton.addEventListener("click", () => {
+          if (overlayUrlInput.value) {
+            navigator.clipboard
+              .writeText(overlayUrlInput.value)
+              .then(() => alert("Overlay URL copied!"))
+              .catch((err) => console.error("Failed to copy URL:", err));
+          }
         });
 
-        window.addEventListener('beforeunload', () => {
-            if (socket) {
-                console.log("Capacitor Home: Disconnecting socket on beforeunload.");
-                socket.disconnect();
-            }
+        manualControlButton.addEventListener("click", () => {
+          if (currentApiKey) {
+            window.location.href = `./control.html?key=${currentApiKey}`;
+          }
         });
+
+        try {
+          console.log(
+            "Capacitor Home: Fetching API Key from",
+            `${API_SERVER_URL}/api/generate-api-key`
+          );
+          const res = await fetch(`${API_SERVER_URL}/api/generate-api-key`);
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          const data = await res.json();
+          currentApiKey = data.apiKey;
+          apiKeyDisplay.textContent = currentApiKey;
+          console.log("Capacitor Home: Fetched API Key:", currentApiKey);
+
+          const generatedOverlayUrl = `${API_SERVER_URL}/overlay?key=${currentApiKey}`;
+          overlayUrlInput.value = generatedOverlayUrl;
+          console.log(
+            "Capacitor Home: Generated Overlay URL:",
+            generatedOverlayUrl
+          );
+
+          // Initialize Socket.IO connection
+          console.log(
+            "Capacitor Home: Initializing Socket.IO connection to",
+            API_SERVER_URL
+          );
+          socket = io(API_SERVER_URL, {
+            query: { apiKey: currentApiKey, type: "home" },
+            transports: ["websocket"],
+          });
+          console.log("Capacitor Home: Socket initialized.");
+
+          socket.on("connect", () => {
+            console.log("Capacitor Home: Connected to socket.io server.");
+            statusElement.textContent =
+              "Connected to server. Waiting for overlay...";
+          });
+
+          socket.on("disconnect", () => {
+            console.log("Capacitor Home: Disconnected from socket.io server.");
+            statusElement.textContent = "Disconnected from server.";
+          });
+
+          socket.on("overlayConnected", () => {
+            console.log(
+              "Capacitor Home: Overlay Connected! Redirecting to control.html..."
+            );
+            statusElement.textContent = "Overlay Connected! Redirecting...";
+            // Redirect to control page
+            window.location.href = `./control.html?key=${currentApiKey}`;
+          });
+
+          socket.on("connect_error", (error) => {
+            console.error(
+              "Capacitor Home: Socket connection error:",
+              error.message
+            );
+            statusElement.textContent = `Connection Error: ${error.message}`;
+          });
+        } catch (error) {
+          console.error("Capacitor Home: Failed to initialize:", error);
+          apiKeyDisplay.textContent = "Error";
+          statusElement.textContent = "Failed to initialize.";
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (socket) {
+          console.log("Capacitor Home: Disconnecting socket on beforeunload.");
+          socket.disconnect();
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

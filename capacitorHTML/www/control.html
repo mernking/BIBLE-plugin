@@ -1,133 +1,1198 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capacitor Control</title>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        .disconnected {
-            color: red;
-        }
-        .connected {
-            color: green;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Capacitor Control Page</h1>
-        <p>API Key: <span id="apiKeyDisplay">Loading...</span></p>
-        <p>Overlay Status: <span id="overlayStatus" class="disconnected">Disconnected</span></p>
-        
-        <div style="margin-top: 20px;">
-            <button id="bibleControl">Bible Control (Placeholder)</button>
-            <button id="hymnControl">Hymn Control (Placeholder)</button>
+    <link rel="stylesheet" href="./global.css" />
+  </head>
+  <body class="text-text bg-background">
+    <div class="container mx-auto p-4">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h1 class="text-2xl font-bold">Capacitor Control</h1>
+          <p>
+            API Key:
+            <span id="apiKeyDisplay" class="font-mono">Loading...</span>
+          </p>
         </div>
+        <div>
+          <p>
+            Overlay Status:
+            <span id="overlayStatus" class="text-red-500 font-bold"
+              >Disconnected</span
+            >
+          </p>
+        </div>
+      </div>
+
+      <div class="flex space-x-4 mb-4">
+        <button
+          id="showBibleControl"
+          class="px-4 py-2 rounded-md bg-accent text-white"
+        >
+          Bible Control
+        </button>
+        <button
+          id="showHymnControl"
+          class="px-4 py-2 rounded-md bg-gray-500 text-white"
+        >
+          Hymn Control
+        </button>
+      </div>
+
+      <div id="bibleControlContainer">
+        <!-- Bible Control UI will be injected here -->
+      </div>
+
+      <div id="hymnControlContainer" class="hidden">
+        <!-- Hymn Control UI will be injected here -->
+      </div>
     </div>
 
     <script>
-        // !!! IMPORTANT: Change this to your Next.js server IP/domain when deploying to a device !!!
-        // Example: const API_SERVER_URL = "http://192.168.1.100:3000";
-        const API_SERVER_URL = "http://localhost:3000"; 
-        let socket = null;
-        let currentApiKey = null;
+      // Constants
+      const API_SERVER_URL = "https://release-referenced-athletics-early.trycloudflare.com";
 
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("Capacitor Control: DOMContentLoaded");
-            const apiKeyDisplay = document.getElementById('apiKeyDisplay');
-            const overlayStatus = document.getElementById('overlayStatus');
+      // State
+      let socket = null;
+      let currentApiKey = null;
+      let allBibles = [];
+      let bibles = [];
+      let availableLanguages = [];
+      let selectedLanguage = "All";
+      let selectedBible = null;
+      let verses = [];
+      let filteredVerses = [];
+      let selectedVerseId = null;
+      let sortBy = "book";
+      let backgroundType = "image";
+      let loading = false;
+      let styles = {
+        backgroundColor: "transparent",
+        fontSize: 32,
+        fontFamily: "Arial",
+        textColor: "#fff",
+        textAlign: "center",
+        backgroundImage: "",
+        backgroundVideo: "",
+        backgroundOpacity: 1,
+        maxWidth: 800,
+        justifyContent: "center",
+        alignItems: "center",
+      };
+      let hymns = [];
+      let filteredHymns = [];
+      let selectedHymn = null;
+      let selectedHymnVerse = null;
+      let hymnSearchTerm = "";
 
-            const urlParams = new URLSearchParams(window.location.search);
-            currentApiKey = urlParams.get('key');
+      // Elements
+      const apiKeyDisplay = document.getElementById("apiKeyDisplay");
+      const overlayStatus = document.getElementById("overlayStatus");
+      const showBibleControlBtn = document.getElementById("showBibleControl");
+      const showHymnControlBtn = document.getElementById("showHymnControl");
+      const bibleControlContainer = document.getElementById(
+        "bibleControlContainer"
+      );
+      const hymnControlContainer = document.getElementById(
+        "hymnControlContainer"
+      );
 
-            if (!currentApiKey) {
-                apiKeyDisplay.textContent = "Error: API Key missing!";
-                overlayStatus.textContent = "Cannot connect without API Key.";
-                overlayStatus.className = "disconnected";
-                console.error("Capacitor Control: API Key missing in URL. Cannot initialize socket.");
-                return;
+      const getVerseId = (verse) =>
+        `${verse.book}-${verse.chapter}-${verse.verse}`;
+
+      // Functions
+      const renderBibleControl = () => {
+        console.log("Rendering Bible Control");
+        bibleControlContainer.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="mb-4">
+                            <label for="language-select" class="block text-sm font-medium text-gray-700">Select Language:</label>
+                            <select id="language-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                ${availableLanguages
+                                  .map(
+                                    (lang) =>
+                                      `<option value="${lang}">${lang}</option>`
+                                  )
+                                  .join("")}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="bible-select" class="block text-sm font-medium text-gray-700">Select Bible:</label>
+                            <select id="bible-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                ${bibles
+                                  .map(
+                                    (bible) =>
+                                      `<option value="${bible.shortname}">${bible.name}</option>`
+                                  )
+                                  .join("")}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="search-bar" class="block text-sm font-medium text-gray-700">Search Verse:</label>
+                            <input type="text" id="search-bar" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., John 3:16 or Genesis">
+                        </div>
+                        <div class="mb-4">
+                            <label for="sort-by" class="block text-sm font-medium text-gray-700">Sort By:</label>
+                            <select id="sort-by" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="book">Book</option>
+                                <option value="chapter">Chapter</option>
+                                <option value="verse">Verse</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <h2 class="text-xl text-text font-semibold mb-2">Verse List</h2>
+                            <div id="verse-list" class="border bg-background text-text rounded-md p-2 h-48 overflow-y-auto">
+                                <!-- Verse list will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Preview Panel</h2>
+                            <div id="preview-panel" class="border rounded-md p-4 min-h-[100px] flex items-center justify-center relative overflow-hidden" style="background-color: ${
+                              styles.backgroundColor
+                            }; font-size: ${styles.fontSize}px; font-family: ${
+          styles.fontFamily
+        }; color: ${styles.textColor}; text-align: ${
+          styles.textAlign
+        }; justify-content: ${styles.justifyContent}; align-items: ${
+          styles.alignItems
+        };">
+                                <div id="preview-background" class="absolute inset-0" style="background-image: url(${
+                                  styles.backgroundImage
+                                }); background-size: cover; background-position: center; background-repeat: no-repeat; opacity: ${
+          styles.backgroundOpacity
+        };"></div>
+                                <video id="preview-video-background" class="absolute inset-0 w-full h-full object-cover" src="${
+                                  styles.backgroundVideo
+                                }" autoplay loop muted style="opacity: ${
+          styles.backgroundOpacity
+        };"></video>
+                                <p id="preview-text" class="relative z-10" style="max-width: ${
+                                  styles.maxWidth
+                                }px;">Select a verse to preview.</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Customization Controls</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Background Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Background</legend>
+                                    <div class="flex space-x-2 mb-4">
+                                        <button id="bg-type-image" class="px-3 py-1 border rounded-md text-sm">Image</button>
+                                        <button id="bg-type-video" class="px-3 py-1 border rounded-md text-sm">Video</button>
+                                    </div>
+                                    <div id="background-controls-image">
+                                        <div class="mb-2">
+                                            <label for="bg-image-url" class="block text-sm font-medium text-gray-700">Background Image URL:</label>
+                                            <input type="text" id="bg-image-url" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., https://example.com/image.jpg">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="bg-image-file" class="block text-sm font-medium text-gray-700">Or upload from computer:</label>
+                                            <input type="file" id="bg-image-file" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-text hover:text-background">
+                                        </div>
+                                    </div>
+                                    <div id="background-controls-video" class="hidden">
+                                        <div class="mb-2">
+                                            <label for="bg-video-url" class="block text-sm font-medium text-gray-700">Background Video URL:</label>
+                                            <input type="text" id="bg-video-url" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., https://example.com/video.mp4">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="bg-video-file" class="block text-sm font-medium text-gray-700">Or upload from computer:</label>
+                                            <input type="file" id="bg-video-file" accept="video/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-text hover:text-background">
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="bg-opacity" class="block text-sm font-medium text-gray-700">Background Opacity:</label>
+                                        <input type="range" id="bg-opacity" min="0" max="1" step="0.01" value="${
+                                          styles.backgroundOpacity
+                                        }" class="w-full">
+                                        <span>${(
+                                          styles.backgroundOpacity * 100
+                                        ).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="bg-color" class="block text-sm font-medium text-gray-700">Background Color:</label>
+                                        <input type="color" id="bg-color" value="${
+                                          styles.backgroundColor ===
+                                          "transparent"
+                                            ? "#000000"
+                                            : styles.backgroundColor
+                                        }" class="w-full">
+                                        <button id="bg-transparent" class="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm">Transparent</button>
+                                    </div>
+                                </fieldset>
+                                <!-- Typography Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Typography</legend>
+                                    <div class="mb-2">
+                                        <label for="font-size" class="block text-sm font-medium text-gray-700">Font Size:</label>
+                                        <input type="range" id="font-size" min="16" max="100" value="${
+                                          styles.fontSize
+                                        }" class="w-full">
+                                        <span>${styles.fontSize}px</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="font-family" class="block text-sm font-medium text-gray-700">Font Family:</label>
+                                        <select id="font-family" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                            <option>Arial</option>
+    <option>Verdana</option>
+    <option>Georgia</option>
+    <option>Times New Roman</option>
+    <option>Courier New</option>
+    <option>Tahoma</option>
+    <option>Trebuchet MS</option>
+    <option>Impact</option>
+    <option>Comic Sans MS</option>
+    <option>Lucida Console</option>
+    <option>Palatino Linotype</option>
+    <option>Arial Black</option>
+    <option>Garamond</option>
+    <option>Bookman</option>
+    <option>Century Gothic</option>
+    <option>Segoe UI</option>
+    <option>Helvetica</option>
+    <option>Futura</option>
+    <option>Frank Ruhl Libre</option>
+    <option>Montserrat</option>
+    <option>Open Sans</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="text-color" class="block text-sm font-medium text-gray-700">Text Color:</label>
+                                        <input type="color" id="text-color" value="${
+                                          styles.textColor
+                                        }" class="w-full">
+                                    </div>
+                                </fieldset>
+                                <!-- Layout Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Layout</legend>
+                                    <div class="mb-2">
+                                        <label for="max-width" class="block text-sm font-medium text-gray-700">Max Width (px):</label>
+                                        <input type="number" id="max-width" min="100" max="1920" value="${
+                                          styles.maxWidth
+                                        }" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Horizontal Alignment:</label>
+                                        <div class="mt-1 flex space-x-2">
+                                            <button id="align-h-left" class="px-3 py-1 border rounded-md text-sm">Left</button>
+                                            <button id="align-h-center" class="px-3 py-1 border rounded-md text-sm">Center</button>
+                                            <button id="align-h-right" class="px-3 py-1 border rounded-md text-sm">Right</button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Vertical Alignment:</label>
+                                        <div class="mt-1 flex space-x-2">
+                                            <button id="align-v-top" class="px-3 py-1 border rounded-md text-sm">Top</button>
+                                            <button id="align-v-middle" class="px-3 py-1 border rounded-md text-sm">Middle</button>
+                                            <button id="align-v-bottom" class="px-3 py-1 border rounded-md text-sm">Bottom</button>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                        <div class="flex space-x-4">
+                            <button id="goLiveBible" class="bg-green-500 text-white px-4 py-2 rounded-md">Go Live</button>
+                            <button id="clearBible" class="bg-red-500 text-white px-4 py-2 rounded-md">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+      };
+
+      const renderHymnControl = () => {
+        console.log("Rendering Hymn Control");
+        hymnControlContainer.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="mb-4">
+                            <label for="hymn-search-bar" class="block text-sm font-medium text-gray-700">Search Hymn:</label>
+                            <input type="text" id="hymn-search-bar" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., Amazing Grace">
+                        </div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Hymn List</h2>
+                            <div id="hymn-list" class="border rounded-md p-2 h-48 overflow-y-auto bg-background">
+                                <!-- Hymn list will be populated here -->
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Verse List</h2>
+                            <div id="hymn-verse-list" class="border text-text rounded-md p-2 h-48 overflow-y-auto">
+                                <!-- Hymn verse list will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Preview Panel</h2>
+                            <div id="hymn-preview-panel" class="border rounded-md p-4 min-h-[100px] flex items-center justify-center relative overflow-hidden" style="background-color: ${
+                              styles.backgroundColor
+                            }; font-size: ${styles.fontSize}px; font-family: ${
+          styles.fontFamily
+        }; color: ${styles.textColor}; text-align: ${
+          styles.textAlign
+        }; justify-content: ${styles.justifyContent}; align-items: ${
+          styles.alignItems
+        };">
+                                <div id="hymn-preview-background" class="absolute inset-0" style="background-image: url(${
+                                  styles.backgroundImage
+                                }); background-size: cover; background-position: center; background-repeat: no-repeat; opacity: ${
+          styles.backgroundOpacity
+        };"></div>
+                                <video id="hymn-preview-video-background" class="absolute inset-0 w-full h-full object-cover" src="${
+                                  styles.backgroundVideo
+                                }" autoplay loop muted style="opacity: ${
+          styles.backgroundOpacity
+        };"></video>
+                                <p id="hymn-preview-text" class="relative z-10" style="max-width: ${
+                                  styles.maxWidth
+                                }px;">Select a hymn and verse to preview.</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold mb-2">Customization Controls</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Background Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Background</legend>
+                                    <div class="flex space-x-2 mb-4">
+                                        <button id="hymn-bg-type-image" class="px-3 py-1 border rounded-md text-sm">Image</button>
+                                        <button id="hymn-bg-type-video" class="px-3 py-1 border rounded-md text-sm">Video</button>
+                                    </div>
+                                    <div id="hymn-background-controls-image">
+                                        <div class="mb-2">
+                                            <label for="hymn-bg-image-url" class="block text-sm font-medium text-gray-700">Background Image URL:</label>
+                                            <input type="text" id="hymn-bg-image-url" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., https://example.com/image.jpg">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="hymn-bg-image-file" class="block text-sm font-medium text-gray-700">Or upload from computer:</label>
+                                            <input type="file" id="hymn-bg-image-file" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-text hover:text-background">
+                                        </div>
+                                    </div>
+                                    <div id="hymn-background-controls-video" class="hidden">
+                                        <div class="mb-2">
+                                            <label for="hymn-bg-video-url" class="block text-sm font-medium text-gray-700">Background Video URL:</label>
+                                            <input type="text" id="hymn-bg-video-url" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" placeholder="e.g., https://example.com/video.mp4">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="hymn-bg-video-file" class="block text-sm font-medium text-gray-700">Or upload from computer:</label>
+                                            <input type="file" id="hymn-bg-video-file" accept="video/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-text hover:text-background">
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="hymn-bg-opacity" class="block text-sm font-medium text-gray-700">Background Opacity:</label>
+                                        <input type="range" id="hymn-bg-opacity" min="0" max="1" step="0.01" value="${
+                                          styles.backgroundOpacity
+                                        }" class="w-full">
+                                        <span>${(
+                                          styles.backgroundOpacity * 100
+                                        ).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="hymn-bg-color" class="block text-sm font-medium text-gray-700">Background Color:</label>
+                                        <input type="color" id="hymn-bg-color" value="${
+                                          styles.backgroundColor ===
+                                          "transparent"
+                                            ? "#000000"
+                                            : styles.backgroundColor
+                                        }" class="w-full">
+                                        <button id="hymn-bg-transparent" class="ml-2 px-3 py-1 border border-gray-300 rounded-md text-sm">Transparent</button>
+                                    </div>
+                                </fieldset>
+                                <!-- Typography Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Typography</legend>
+                                    <div class="mb-2">
+                                        <label for="hymn-font-size" class="block text-sm font-medium text-gray-700">Font Size:</label>
+                                        <input type="range" id="hymn-font-size" min="16" max="100" value="${
+                                          styles.fontSize
+                                        }" class="w-full">
+                                        <span>${styles.fontSize}px</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="hymn-font-family" class="block text-sm font-medium text-gray-700">Font Family:</label>
+                                        <select id="hymn-font-family" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                             <option>Arial</option>
+    <option>Verdana</option>
+    <option>Georgia</option>
+    <option>Times New Roman</option>
+    <option>Courier New</option>
+    <option>Tahoma</option>
+    <option>Trebuchet MS</option>
+    <option>Impact</option>
+    <option>Comic Sans MS</option>
+    <option>Lucida Console</option>
+    <option>Palatino Linotype</option>
+    <option>Arial Black</option>
+    <option>Garamond</option>
+    <option>Bookman</option>
+    <option>Century Gothic</option>
+    <option>Segoe UI</option>
+    <option>Helvetica</option>
+    <option>Futura</option>
+    <option>Frank Ruhl Libre</option>
+    <option>Montserrat</option>
+    <option>Open Sans</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="hymn-text-color" class="block text-sm font-medium text-gray-700">Text Color:</label>
+                                        <input type="color" id="hymn-text-color" value="${
+                                          styles.textColor
+                                        }" class="w-full">
+                                    </div>
+                                </fieldset>
+                                <!-- Layout Controls -->
+                                <fieldset class="border border-gray-300 p-4 rounded-md">
+                                    <legend class="text-lg font-semibold px-2">Layout</legend>
+                                    <div class="mb-2">
+                                        <label for="hymn-max-width" class="block text-sm font-medium text-gray-700">Max Width (px):</label>
+                                        <input type="number" id="hymn-max-width" min="100" max="1920" value="${
+                                          styles.maxWidth
+                                        }" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Horizontal Alignment:</label>
+                                        <div class="mt-1 flex space-x-2">
+                                            <button id="hymn-align-h-left" class="px-3 py-1 border rounded-md text-sm">Left</button>
+                                            <button id="hymn-align-h-center" class="px-3 py-1 border rounded-md text-sm">Center</button>
+                                            <button id="hymn-align-h-right" class="px-3 py-1 border rounded-md text-sm">Right</button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Vertical Alignment:</label>
+                                        <div class="mt-1 flex space-x-2">
+                                            <button id="hymn-align-v-top" class="px-3 py-1 border rounded-md text-sm">Top</button>
+                                            <button id="hymn-align-v-middle" class="px-3 py-1 border rounded-md text-sm">Middle</button>
+                                            <button id="hymn-align-v-bottom" class="px-3 py-1 border rounded-md text-sm">Bottom</button>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                        <div class="flex space-x-4">
+                            <button id="goLiveHymn" class="bg-green-500 text-white px-4 py-2 rounded-md">Go Live</button>
+                            <button id="clearHymn" class="bg-red-500 text-white px-4 py-2 rounded-md">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+      };
+
+      const updateVerseList = () => {
+        const verseList = document.getElementById("verse-list");
+        if (!verseList) return;
+        if (loading) {
+          verseList.innerHTML = '<p class="text-gray-500">Loading...</p>';
+          return;
+        }
+        if (filteredVerses.length > 0) {
+          verseList.innerHTML = filteredVerses
+            .map(
+              (verse) => `
+                    <div class="p-2 cursor-pointer hover:bg-text hover:text-background ${
+                      selectedVerseId === getVerseId(verse)
+                        ? "bg-accent/60"
+                        : ""
+                    }" data-verse-id="${getVerseId(verse)}">
+                        <p class="font-semibold">${verse.book_name} ${
+                verse.chapter
+              }:${verse.verse}</p>
+                        <p class="text-sm text-gray-400">${verse.text.substring(
+                          0,
+                          100
+                        )}...</p>
+                    </div>
+                `
+            )
+            .join("");
+        } else {
+          verseList.innerHTML = `<p class="text-gray-500">${
+            document.getElementById("search-bar")?.value
+              ? "No verses found for your search."
+              : "Select a bible to see verses."
+          }</p>`;
+        }
+      };
+
+      const updateHymnList = () => {
+        const hymnList = document.getElementById("hymn-list");
+        if (!hymnList) return;
+        if (loading) {
+          hymnList.innerHTML = '<p class="text-gray-500">Loading...</p>';
+          return;
+        }
+        if (filteredHymns.length > 0) {
+          hymnList.innerHTML = filteredHymns
+            .map(
+              (hymn) => `
+                    <div class="p-2 cursor-pointer hover:bg-text hover:text-background ${
+                      selectedHymn && selectedHymn.id === hymn.id
+                        ? "bg-accent/60"
+                        : ""
+                    }" data-hymn-id="${hymn.id}">
+                        <p class="font-semibold">${hymn.title}</p>
+                    </div>
+                `
+            )
+            .join("");
+        } else {
+          hymnList.innerHTML = '<p class="text-gray-500">No hymns found.</p>';
+        }
+      };
+
+      const updateHymnVerseList = () => {
+        const hymnVerseList = document.getElementById("hymn-verse-list");
+        if (!hymnVerseList) return;
+        if (selectedHymn) {
+          const verses = JSON.parse(selectedHymn.verses);
+          hymnVerseList.innerHTML = verses
+            .map(
+              (verse, index) => `
+                    <div class="p-2 cursor-pointer hover:bg-text hover:text-background ${
+                      selectedHymnVerse === verse ? "bg-accent/60" : ""
+                    }" data-verse-index="${index}">
+                        <p class="text-sm text-gray-400">${verse.substring(
+                          0,
+                          100
+                        )}...</p>
+                    </div>
+                `
+            )
+            .join("");
+        } else {
+          hymnVerseList.innerHTML =
+            '<p class="text-gray-500">Select a hymn to see verses.</p>';
+        }
+      };
+
+      const updatePreview = () => {
+        const previewPanel = document.getElementById("preview-panel");
+        if (!previewPanel) return;
+        const previewBackground = document.getElementById("preview-background");
+        const previewVideoBackground = document.getElementById(
+          "preview-video-background"
+        );
+        const previewText = document.getElementById("preview-text");
+
+        previewPanel.style.backgroundColor = styles.backgroundColor;
+        previewPanel.style.fontSize = `${styles.fontSize}px`;
+        previewPanel.style.fontFamily = styles.fontFamily;
+        previewPanel.style.color = styles.textColor;
+        previewPanel.style.textAlign = styles.textAlign;
+        previewPanel.style.justifyContent = styles.justifyContent;
+        previewPanel.style.alignItems = styles.alignItems;
+
+        if (styles.backgroundImage) {
+          previewBackground.style.backgroundImage = `url(${styles.backgroundImage})`;
+          previewVideoBackground.src = "";
+        } else if (styles.backgroundVideo) {
+          previewVideoBackground.src = styles.backgroundVideo;
+          previewBackground.style.backgroundImage = "";
+        } else {
+          previewBackground.style.backgroundImage = "";
+          previewVideoBackground.src = "";
+        }
+        previewBackground.style.opacity = styles.backgroundOpacity;
+        previewVideoBackground.style.opacity = styles.backgroundOpacity;
+
+        const selectedVerse = filteredVerses.find(
+          (v) => getVerseId(v) === selectedVerseId
+        );
+        if (selectedVerse) {
+          previewText.innerHTML = `${selectedVerse.text} - ${selectedVerse.book_name} ${selectedVerse.chapter}:${selectedVerse.verse}`;
+        } else {
+          previewText.innerHTML = "Select a verse to preview.";
+        }
+        previewText.style.maxWidth = `${styles.maxWidth}px`;
+      };
+
+      const updateHymnPreview = () => {
+        const hymnPreviewPanel = document.getElementById("hymn-preview-panel");
+        if (!hymnPreviewPanel) return;
+        const hymnPreviewBackground = document.getElementById(
+          "hymn-preview-background"
+        );
+        const hymnPreviewVideoBackground = document.getElementById(
+          "hymn-preview-video-background"
+        );
+        const hymnPreviewText = document.getElementById("hymn-preview-text");
+
+        hymnPreviewPanel.style.backgroundColor = styles.backgroundColor;
+        hymnPreviewPanel.style.fontSize = `${styles.fontSize}px`;
+        hymnPreviewPanel.style.fontFamily = styles.fontFamily;
+        hymnPreviewPanel.style.color = styles.textColor;
+        hymnPreviewPanel.style.textAlign = styles.textAlign;
+        hymnPreviewPanel.style.justifyContent = styles.justifyContent;
+        hymnPreviewPanel.style.alignItems = styles.alignItems;
+
+        if (styles.backgroundImage) {
+          hymnPreviewBackground.style.backgroundImage = `url(${styles.backgroundImage})`;
+          hymnPreviewVideoBackground.src = "";
+        } else if (styles.backgroundVideo) {
+          hymnPreviewVideoBackground.src = styles.backgroundVideo;
+          hymnPreviewBackground.style.backgroundImage = "";
+        } else {
+          hymnPreviewBackground.style.backgroundImage = "";
+          hymnPreviewVideoBackground.src = "";
+        }
+        hymnPreviewBackground.style.opacity = styles.backgroundOpacity;
+        hymnPreviewVideoBackground.style.opacity = styles.backgroundOpacity;
+
+        if (selectedHymnVerse) {
+          hymnPreviewText.innerHTML = selectedHymnVerse.replace(
+            /\n/g,
+            "<br />"
+          );
+        } else {
+          hymnPreviewText.innerHTML = "Select a hymn and verse to preview.";
+        }
+        hymnPreviewText.style.maxWidth = `${styles.maxWidth}px`;
+      };
+
+      const fetchBibleList = async () => {
+        console.log("Fetching Bible list...");
+        try {
+          const res = await fetch(`${API_SERVER_URL}/api/bibles`);
+          const data = await res.json();
+          allBibles = data.bibles;
+          const languages = new Set(["All"]);
+          allBibles.forEach((bible) => {
+            if (bible.lang) {
+              languages.add(bible.lang);
             }
+          });
+          availableLanguages = Array.from(languages).sort();
+          filterBibles();
+          renderBibleControl();
+          updateVerseList();
+          console.log("Bible list fetched successfully.");
+        } catch (error) {
+          console.error("Failed to fetch bible list:", error);
+        }
+      };
 
-            apiKeyDisplay.textContent = currentApiKey;
-            console.log("Capacitor Control: API Key from URL:", currentApiKey);
+      const fetchBibleContent = async () => {
+        if (selectedBible) {
+          console.log(`Fetching content for ${selectedBible}...`);
+          loading = true;
+          updateVerseList();
+          try {
+            const res = await fetch(
+              `${API_SERVER_URL}/api/bibles/${selectedBible}`
+            );
+            const data = await res.json();
+            verses = data.verses;
+            filterAndSortVerses();
+            console.log(`Content for ${selectedBible} fetched successfully.`);
+          } catch (error) {
+            console.error(
+              `Failed to fetch bible content for ${selectedBible}:`,
+              error
+            );
+            verses = [];
+            filteredVerses = [];
+          }
+          loading = false;
+          updateVerseList();
+        } else {
+          verses = [];
+          filteredVerses = [];
+          updateVerseList();
+        }
+      };
 
-            // Initialize Socket.IO connection
-            console.log("Capacitor Control: Initializing Socket.IO connection to", API_SERVER_URL);
-            socket = io(API_SERVER_URL, {
-                query: { apiKey: currentApiKey, type: 'mobile' }, // Using 'mobile' type for control page
-                transports: ['websocket'],
-            });
-            console.log("Capacitor Control: Socket initialized.");
+      const fetchHymns = async () => {
+        console.log("Fetching hymns...");
+        loading = true;
+        updateHymnList();
+        try {
+          const res = await fetch(`${API_SERVER_URL}/api/hymns`);
+          const data = await res.json();
+          hymns = data;
+          filteredHymns = data;
+          console.log("Hymns fetched successfully.");
+        } catch (error) {
+          console.error("Failed to fetch hymns:", error);
+        }
+        loading = false;
+        updateHymnList();
+      };
 
-            socket.on('connect', () => {
-                console.log("Capacitor Control: Connected to socket.io server.");
-            });
+      const filterBibles = () => {
+        if (selectedLanguage === "All") {
+          bibles = allBibles;
+        } else {
+          bibles = allBibles.filter((bible) => bible.lang === selectedLanguage);
+        }
+        if (bibles.length > 0) {
+          selectedBible = bibles[0].shortname;
+        } else {
+          selectedBible = null;
+        }
+        fetchBibleContent();
+      };
 
-            socket.on('disconnect', () => {
-                console.log("Capacitor Control: Disconnected from socket.io server.");
-                overlayStatus.textContent = "Disconnected";
-                overlayStatus.className = "disconnected";
-            });
+      const filterAndSortVerses = () => {
+        let currentFilteredVerses = [];
+        const searchTerm =
+          document.getElementById("search-bar")?.value.toLowerCase() || "";
 
-            socket.on('overlayConnected', () => {
-                console.log("Capacitor Control: Overlay Connected!");
-                overlayStatus.textContent = "Connected";
-                overlayStatus.className = "connected";
-            });
+        if (searchTerm) {
+          currentFilteredVerses = verses.filter((verse) => {
+            const reference =
+              `${verse.book_name} ${verse.chapter}:${verse.verse}`.toLowerCase();
+            const text = verse.text.toLowerCase();
+            return reference.includes(searchTerm) || text.includes(searchTerm);
+          });
+        } else {
+          currentFilteredVerses = verses;
+        }
 
-            socket.on('overlayDisconnected', () => {
-                console.log("Capacitor Control: Overlay Disconnected!");
-                overlayStatus.textContent = "Disconnected";
-                overlayStatus.className = "disconnected";
-            });
+        const sortedVerses = [...currentFilteredVerses].sort((a, b) => {
+          if (sortBy === "book") {
+            if (a.book !== b.book) return a.book - b.book;
+            if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+            return a.verse - b.verse;
+          } else if (sortBy === "chapter") {
+            if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+            if (a.book !== b.book) return a.book - b.book;
+            return a.verse - b.verse;
+          } else if (sortBy === "verse") {
+            if (a.verse !== b.verse) return a.verse - b.verse;
+            if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+            return a.book - b.book;
+          }
+          return 0;
+        });
+        filteredVerses = sortedVerses;
+        updateVerseList();
+      };
 
-            socket.on('connect_error', (error) => {
-                console.error("Capacitor Control: Socket connection error:", error.message);
-                overlayStatus.textContent = `Connection Error: ${error.message}`;
-                overlayStatus.className = "disconnected";
-            });
+      const filterHymns = () => {
+        const searchTerm =
+          document.getElementById("hymn-search-bar")?.value.toLowerCase() || "";
+        if (searchTerm) {
+          filteredHymns = hymns.filter((hymn) =>
+            hymn.title.toLowerCase().includes(searchTerm)
+          );
+        } else {
+          filteredHymns = hymns;
+        }
+        updateHymnList();
+      };
+
+      const goLiveBible = () => {
+        const selectedVerse = filteredVerses.find(
+          (v) => getVerseId(v) === selectedVerseId
+        );
+        if (socket && selectedVerse) {
+          console.log("Going live with verse:", selectedVerse);
+          socket.emit("setVerse", { verse: selectedVerse, styles });
+        } else {
+          console.log(
+            "Go live for Bible failed. Socket or selected verse not available.",
+            { socket, selectedVerse }
+          );
+        }
+      };
+
+      const clearBible = () => {
+        if (socket) {
+          console.log("Clearing verse");
+          socket.emit("clearVerse");
+          selectedVerseId = null;
+          updatePreview();
+        }
+      };
+
+      const goLiveHymn = () => {
+        if (socket && selectedHymn && selectedHymnVerse) {
+          const data = {
+            hymn: {
+              title: selectedHymn.title,
+              verse: selectedHymnVerse,
+            },
+            styles,
+          };
+          console.log("Going live with hymn verse:", data);
+          socket.emit("setHymn", data);
+        } else {
+          console.log(
+            "Go live for Hymn failed. Socket, selected hymn, or selected hymn verse not available.",
+            { socket, selectedHymn, selectedHymnVerse }
+          );
+        }
+      };
+
+      const clearHymn = () => {
+        if (socket) {
+          console.log("Clearing hymn");
+          socket.emit("clearHymn");
+          selectedHymn = null;
+          selectedHymnVerse = null;
+          updateHymnPreview();
+        }
+      };
+
+      const handleImageUpload = (e, isHymn = false) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            styles.backgroundImage = event.target.result;
+            styles.backgroundVideo = "";
+            if (isHymn) {
+              updateHymnPreview();
+            } else {
+              updatePreview();
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handleVideoUpload = (e, isHymn = false) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            styles.backgroundVideo = event.target.result;
+            styles.backgroundImage = "";
+            if (isHymn) {
+              updateHymnPreview();
+            } else {
+              updatePreview();
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      // Event Listeners
+      showBibleControlBtn.addEventListener("click", () => {
+        bibleControlContainer.classList.remove("hidden");
+        hymnControlContainer.classList.add("hidden");
+        showBibleControlBtn.classList.replace("bg-gray-500", "bg-accent");
+        showHymnControlBtn.classList.replace("bg-accent", "bg-gray-500");
+        renderBibleControl();
+        updateVerseList();
+      });
+
+      showHymnControlBtn.addEventListener("click", () => {
+        hymnControlContainer.classList.remove("hidden");
+        bibleControlContainer.classList.add("hidden");
+        showHymnControlBtn.classList.replace("bg-gray-500", "bg-accent");
+        showBibleControlBtn.classList.replace("bg-accent", "bg-gray-500");
+        renderHymnControl();
+        updateHymnList();
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM content loaded");
+        const urlParams = new URLSearchParams(window.location.search);
+        currentApiKey = urlParams.get("key");
+
+        if (!currentApiKey) {
+          apiKeyDisplay.textContent = "Error: API Key missing!";
+          overlayStatus.textContent = "Cannot connect without API Key.";
+          overlayStatus.classList.add("text-red-500");
+          return;
+        }
+
+        apiKeyDisplay.textContent = currentApiKey;
+
+        socket = io(API_SERVER_URL, {
+          query: { apiKey: currentApiKey, type: "mobile" },
+          transports: ["websocket"],
         });
 
-        window.addEventListener('beforeunload', () => {
-            if (socket) {
-                console.log("Capacitor Control: Disconnecting socket on beforeunload.");
-                socket.disconnect();
-            }
+        socket.on("connect", () => {
+          console.log("Socket connected");
+          overlayStatus.textContent = "Connected to server";
+          overlayStatus.classList.remove("text-red-500");
+          overlayStatus.classList.add("text-green-500");
         });
+
+        socket.on("disconnect", () => {
+          console.log("Socket disconnected");
+          overlayStatus.textContent = "Disconnected";
+          overlayStatus.classList.remove("text-green-500");
+          overlayStatus.classList.add("text-red-500");
+        });
+
+        socket.on("overlayConnected", () => {
+          console.log("Overlay connected");
+          overlayStatus.textContent = "Connected";
+          overlayStatus.classList.remove("text-red-500");
+          overlayStatus.classList.add("text-green-500");
+        });
+
+        socket.on("overlayDisconnected", () => {
+          console.log("Overlay disconnected");
+          overlayStatus.textContent = "Disconnected";
+          overlayStatus.classList.remove("text-green-500");
+          overlayStatus.classList.add("text-red-500");
+        });
+
+        fetchBibleList();
+        fetchHymns();
+        renderBibleControl();
+      });
+
+      // Delegated event listeners for dynamic content
+      document.addEventListener("change", (e) => {
+        if (e.target.id === "language-select") {
+          selectedLanguage = e.target.value;
+          filterBibles();
+          renderBibleControl();
+        }
+        if (e.target.id === "bible-select") {
+          selectedBible = e.target.value;
+          fetchBibleContent();
+        }
+        if (e.target.id === "sort-by") {
+          sortBy = e.target.value;
+          filterAndSortVerses();
+        }
+        if (e.target.id === "font-family") {
+          styles.fontFamily = e.target.value;
+          updatePreview();
+        }
+        if (e.target.id === "hymn-font-family") {
+          styles.fontFamily = e.target.value;
+          updateHymnPreview();
+        }
+        if (e.target.id === "bg-image-file") {
+          handleImageUpload(e);
+        }
+        if (e.target.id === "bg-video-file") {
+          handleVideoUpload(e);
+        }
+        if (e.target.id === "hymn-bg-image-file") {
+          handleImageUpload(e, true);
+        }
+        if (e.target.id === "hymn-bg-video-file") {
+          handleVideoUpload(e, true);
+        }
+      });
+
+      document.addEventListener("input", (e) => {
+        if (e.target.id === "search-bar") {
+          filterAndSortVerses();
+        }
+        if (e.target.id === "hymn-search-bar") {
+          filterHymns();
+        }
+        if (e.target.id === "bg-image-url") {
+          styles.backgroundImage = e.target.value;
+          styles.backgroundVideo = "";
+          updatePreview();
+        }
+        if (e.target.id === "bg-video-url") {
+          styles.backgroundVideo = e.target.value;
+          styles.backgroundImage = "";
+          updatePreview();
+        }
+        if (e.target.id === "bg-opacity") {
+          styles.backgroundOpacity = parseFloat(e.target.value);
+          updatePreview();
+        }
+        if (e.target.id === "bg-color") {
+          styles.backgroundColor = e.target.value;
+          updatePreview();
+        }
+        if (e.target.id === "font-size") {
+          styles.fontSize = parseInt(e.target.value);
+          updatePreview();
+        }
+        if (e.target.id === "text-color") {
+          styles.textColor = e.target.value;
+          updatePreview();
+        }
+        if (e.target.id === "max-width") {
+          styles.maxWidth = parseInt(e.target.value);
+          updatePreview();
+        }
+        if (e.target.id === "hymn-bg-image-url") {
+          styles.backgroundImage = e.target.value;
+          styles.backgroundVideo = "";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-bg-video-url") {
+          styles.backgroundVideo = e.target.value;
+          styles.backgroundImage = "";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-bg-opacity") {
+          styles.backgroundOpacity = parseFloat(e.target.value);
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-bg-color") {
+          styles.backgroundColor = e.target.value;
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-font-size") {
+          styles.fontSize = parseInt(e.target.value);
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-text-color") {
+          styles.textColor = e.target.value;
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-max-width") {
+          styles.maxWidth = parseInt(e.target.value);
+          updateHymnPreview();
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("#verse-list > div")) {
+          const verseId = e.target.closest("#verse-list > div").dataset.verseId;
+          selectedVerseId = verseId;
+          console.log("Selected verse ID:", selectedVerseId);
+          updatePreview();
+          updateVerseList();
+        }
+        if (e.target.closest("#hymn-list > div")) {
+          const hymnId = e.target.closest("#hymn-list > div").dataset.hymnId;
+          selectedHymn = filteredHymns.find((h) => h.id == hymnId);
+          selectedHymnVerse = null;
+          console.log("Selected hymn:", selectedHymn);
+          updateHymnVerseList();
+          updateHymnPreview();
+          updateHymnList();
+        }
+        if (e.target.closest("#hymn-verse-list > div")) {
+          const verseIndex = e.target.closest("#hymn-verse-list > div").dataset
+            .verseIndex;
+          const verses = JSON.parse(selectedHymn.verses);
+          selectedHymnVerse = verses[verseIndex];
+          console.log("Selected hymn verse:", selectedHymnVerse);
+          updateHymnPreview();
+          updateHymnVerseList();
+        }
+        if (e.target.id === "goLiveBible") goLiveBible();
+        if (e.target.id === "clearBible") clearBible();
+        if (e.target.id === "goLiveHymn") goLiveHymn();
+        if (e.target.id === "clearHymn") clearHymn();
+        if (e.target.id === "bg-type-image") {
+          document
+            .getElementById("background-controls-image")
+            .classList.remove("hidden");
+          document
+            .getElementById("background-controls-video")
+            .classList.add("hidden");
+        }
+        if (e.target.id === "bg-type-video") {
+          document
+            .getElementById("background-controls-image")
+            .classList.add("hidden");
+          document
+            .getElementById("background-controls-video")
+            .classList.remove("hidden");
+        }
+        if (e.target.id === "hymn-bg-type-image") {
+          document
+            .getElementById("hymn-background-controls-image")
+            .classList.remove("hidden");
+          document
+            .getElementById("hymn-background-controls-video")
+            .classList.add("hidden");
+        }
+        if (e.target.id === "hymn-bg-type-video") {
+          document
+            .getElementById("hymn-background-controls-image")
+            .classList.add("hidden");
+          document
+            .getElementById("hymn-background-controls-video")
+            .classList.remove("hidden");
+        }
+        if (e.target.id === "bg-transparent") {
+          styles.backgroundColor = "transparent";
+          updatePreview();
+        }
+        if (e.target.id === "hymn-bg-transparent") {
+          styles.backgroundColor = "transparent";
+          updateHymnPreview();
+        }
+        if (e.target.id === "align-h-left") {
+          styles.justifyContent = "flex-start";
+          updatePreview();
+        }
+        if (e.target.id === "align-h-center") {
+          styles.justifyContent = "center";
+          updatePreview();
+        }
+        if (e.target.id === "align-h-right") {
+          styles.justifyContent = "flex-end";
+          updatePreview();
+        }
+        if (e.target.id === "align-v-top") {
+          styles.alignItems = "flex-start";
+          updatePreview();
+        }
+        if (e.target.id === "align-v-middle") {
+          styles.alignItems = "center";
+          updatePreview();
+        }
+        if (e.target.id === "align-v-bottom") {
+          styles.alignItems = "flex-end";
+          updatePreview();
+        }
+        if (e.target.id === "hymn-align-h-left") {
+          styles.justifyContent = "flex-start";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-align-h-center") {
+          styles.justifyContent = "center";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-align-h-right") {
+          styles.justifyContent = "flex-end";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-align-v-top") {
+          styles.alignItems = "flex-start";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-align-v-middle") {
+          styles.alignItems = "center";
+          updateHymnPreview();
+        }
+        if (e.target.id === "hymn-align-v-bottom") {
+          styles.alignItems = "flex-end";
+          updateHymnPreview();
+        }
+      });
+
+      document.addEventListener("dblclick", (e) => {
+        if (e.target.closest("#verse-list > div")) {
+          const verseId = e.target.closest("#verse-list > div").dataset.verseId;
+          selectedVerseId = verseId;
+          goLiveBible();
+        }
+        if (e.target.closest("#hymn-verse-list > div")) {
+          const verseIndex = e.target.closest("#hymn-verse-list > div").dataset
+            .verseIndex;
+          const verses = JSON.parse(selectedHymn.verses);
+          selectedHymnVerse = verses[verseIndex];
+          goLiveHymn();
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (socket) {
+          socket.disconnect();
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
