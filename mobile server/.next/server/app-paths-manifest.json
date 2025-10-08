@@ -1,0 +1,13 @@
+{
+  "/api/bibles/[shortname]/route": "app/api/bibles/[shortname]/route.js",
+  "/api/bibles/route": "app/api/bibles/route.js",
+  "/api/generate-api-key/route": "app/api/generate-api-key/route.js",
+  "/api/hymns/route": "app/api/hymns/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/control/hymn/page": "app/control/hymn/page.js",
+  "/control/page": "app/control/page.js",
+  "/hymns/page": "app/hymns/page.js",
+  "/overlay/page": "app/overlay/page.js",
+  "/page": "app/page.js"
+}

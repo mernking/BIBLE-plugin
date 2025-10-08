@@ -14,7 +14,6 @@
 /coverage
 
 # next.js
-.next
 node_modules
 bibles.xlsx
 frech.zip

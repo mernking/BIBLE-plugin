@@ -1,0 +1,13 @@
+{
+  "/api/bibles/[shortname]/route": "/api/bibles/[shortname]",
+  "/api/bibles/route": "/api/bibles",
+  "/api/generate-api-key/route": "/api/generate-api-key",
+  "/api/hymns/route": "/api/hymns",
+  "/favicon.ico/route": "/favicon.ico",
+  "/_not-found/page": "/_not-found",
+  "/control/hymn/page": "/control/hymn",
+  "/control/page": "/control",
+  "/hymns/page": "/hymns",
+  "/overlay/page": "/overlay",
+  "/page": "/"
+}
