@@ -12,7 +12,25 @@ export default function OverlayPage() {
 
   useEffect(() => {
     const socketInitializer = async () => {
-      socket = io();
+      // Use the environment variable for the server URL
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
+      if (!serverUrl) {
+        console.error("NEXT_PUBLIC_SERVER_URL is not defined");
+        return;
+      }
+
+      // The API key is still expected to be in the URL search params
+      const searchParams = new URLSearchParams(window.location.search);
+      const apiKey = searchParams.get('key');
+      if (!apiKey) {
+        console.error('API Key not found in URL');
+        return;
+      }
+
+      socket = io(serverUrl, {
+        query: { apiKey: apiKey, type: 'overlay' },
+        transports: ['websocket'],
+      });
 
       socket.on("connect", () => {
         console.log("Overlay connected to socket.io server");
@@ -46,6 +64,10 @@ export default function OverlayPage() {
 
       socket.on("disconnect", () => {
         console.log("Overlay disconnected from socket.io server");
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Overlay socket connection error:', error.message);
       });
     };
     socketInitializer();

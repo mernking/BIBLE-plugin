@@ -12,9 +12,10 @@
 
 # testing
 /coverage
+.next
+/.next
 
 # next.js
-.next
 node_modules
 bibles.xlsx
 frech.zip

@@ -12,7 +12,8 @@
 
 # testing
 /coverage
-
+.next
+/.next
 # next.js
 node_modules
 bibles.xlsx

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function BibleControl({ socket }) {
+export default function BibleControl({ socket, apiKey, overlayConnected }) {
   const [allBibles, setAllBibles] = useState([]); // Store all fetched bibles
   const [bibles, setBibles] = useState([]); // Filtered bibles based on language
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -793,13 +793,15 @@ export default function BibleControl({ socket }) {
       <div className='flex space-x-4'>
         <button
           onClick={goLive}
-          className='bg-primary text-white px-4 py-2 rounded-md hover:opacity-80'
+          className={`bg-primary text-white px-4 py-2 rounded-md ${!overlayConnected ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+          disabled={!overlayConnected}
         >
           Go Live
         </button>
         <button
           onClick={clearVerse}
-          className='bg-red-500 text-white px-4 py-2 rounded-md hover:opacity-80'
+          className={`bg-red-500 text-white px-4 py-2 rounded-md ${!overlayConnected ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+          disabled={!overlayConnected}
         >
           Clear
         </button>

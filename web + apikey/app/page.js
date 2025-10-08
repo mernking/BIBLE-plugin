@@ -1,17 +1,98 @@
 "use client";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import io from "socket.io-client";
+import { toast } from "react-toastify";
 
 export default function HomePage() {
-  const overlayUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/overlay`
-      : "http://localhost:3000/overlay";
+  console.log("HomePage component rendered.");
+  const [apiKey, setApiKey] = useState(null);
+  const [overlayUrl, setOverlayUrl] = useState("");
+  const router = useRouter();
+  const socketRef = useRef(null); // Use useRef for the socket instance
+
+  const navigateToControl = () => {
+    if (apiKey) {
+      router.push(`/control?key=${apiKey}`);
+    }
+  };
+
+  console.log(`/control?key=${apiKey}`);
+
+  useEffect(() => {
+    console.log("useEffect: Starting HomePage setup...");
+    let currentApiKey;
+
+    const setup = async () => {
+      try {
+        const res = await fetch("/api/generate-api-key");
+        const data = await res.json();
+        currentApiKey = data.apiKey;
+        setApiKey(currentApiKey);
+        console.log("API Key fetched:", currentApiKey);
+
+        const generatedOverlayUrl =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/overlay?key=${currentApiKey}`
+            : `http://localhost:3000/overlay?key=${currentApiKey}`;
+        setOverlayUrl(generatedOverlayUrl);
+        console.log("Generated Overlay URL:", generatedOverlayUrl);
+
+        const serverUrl =
+          process.env.NEXT_PUBLIC_SERVER_URL || window.location.origin;
+        socketRef.current = io(serverUrl, {
+          query: { apiKey: currentApiKey, type: "home" },
+          transports: ["websocket"],
+        });
+        console.log("Socket initialized:", socketRef.current);
+
+        console.log("Attaching socket event listeners...");
+        socketRef.current.on("connect", () => {
+          console.log("Home page connected to socket.io server");
+          console.log("Socket ID:", socketRef.current.id);
+        });
+        socketRef.current.on("disconnect", () =>
+          console.log("Home page disconnected from socket.io server")
+        );
+
+        socketRef.current.on("overlayConnected", () => {
+          console.log(
+            "overlayConnected event received on home page. Redirecting..."
+          );
+          toast.success("Overlay Connected! Redirecting to control panel.");
+          if (currentApiKey) {
+            router.push(`/control?key=${currentApiKey}`);
+          } else {
+            console.log({ message: "no api key" });
+          }
+        });
+
+        socketRef.current.on("connect_error", (error) => {
+          console.error("Home page socket connection error:", error.message);
+          toast.error(`Socket connection error: ${error.message}`);
+        });
+        console.log("Socket event listeners attached.");
+      } catch (error) {
+        console.error("Failed to generate API key or connect socket:", error);
+        toast.error("Failed to initialize: " + error.message);
+      }
+    };
+
+    setup();
+
+    return () => {
+      console.log("useEffect cleanup: Disconnecting socket if it exists.");
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []); // Empty dependency array to run once on mount
 
   const copyToClipboard = async (textToCopy) => {
     if (navigator?.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(textToCopy);
-        alert("Overlay URL copied to clipboard!");
+        toast.success("Overlay URL copied to clipboard!");
         return;
       } catch (err) {
         console.error("Clipboard API failed:", err);
@@ -54,12 +135,18 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Link
-          href="/control"
-          className="inline-block bg-accent text-white px-6 py-3 rounded-md text-lg font-semibold hover:opacity-80 transition-opacity duration-200"
+        <p className="text-sm text-gray-600 mt-4">
+          Copy the URL above and paste it into OBS as a Browser Source. Once the
+          overlay connects, you will be redirected to the control panel.
+        </p>
+
+        <button
+          onClick={navigateToControl}
+          className="mt-4 bg-secondary text-white px-4 py-2 rounded-md hover:opacity-80"
+          disabled={!apiKey}
         >
-          Go to Control Dashboard
-        </Link>
+          Go to Control Panel (Manual)
+        </button>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { ToastContainer } from "react-toastify";
 import "./globals.css";
 import Link from "next/link";
 
@@ -11,6 +12,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="antialiased">{children}</body>
+      <ToastContainer />
     </html>
   );
 }

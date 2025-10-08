@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function HymnControl({ socket }) {
+export default function HymnControl({ socket, apiKey, overlayConnected }) {
   const [hymns, setHymns] = useState([]);
   const [filteredHymns, setFilteredHymns] = useState([]);
   const [selectedHymn, setSelectedHymn] = useState(null);
@@ -534,13 +534,15 @@ export default function HymnControl({ socket }) {
       <div className='flex space-x-4'>
         <button
           onClick={goLive}
-          className='bg-primary text-white px-4 py-2 rounded-md hover:opacity-80'
+          className={`bg-primary text-white px-4 py-2 rounded-md ${!overlayConnected ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+          disabled={!overlayConnected}
         >
           Go Live
         </button>
         <button
           onClick={clearHymn}
-          className='bg-red-500 text-white px-4 py-2 rounded-md hover:opacity-80'
+          className={`bg-red-500 text-white px-4 py-2 rounded-md ${!overlayConnected ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+          disabled={!overlayConnected}
         >
           Clear
         </button>

@@ -7,6 +7,15 @@
       "static/chunks/main-app-515b2478b5348b2d.js",
       "static/chunks/app/_not-found/page-fc0ad354905c03f5.js"
     ],
+    "/layout": [
+      "static/chunks/webpack-77c89213cfc54f05.js",
+      "static/chunks/cff928f3-26766f4ecd043e64.js",
+      "static/chunks/134-7f57497ff58ae12d.js",
+      "static/chunks/main-app-515b2478b5348b2d.js",
+      "static/css/c6a194fa911a41c2.css",
+      "static/chunks/74-b3b1b63cf40ec385.js",
+      "static/chunks/app/layout-e6db718768304e74.js"
+    ],
     "/api/bibles/[shortname]/route": [
       "static/chunks/webpack-77c89213cfc54f05.js",
       "static/chunks/cff928f3-26766f4ecd043e64.js",
@@ -34,15 +43,6 @@
       "static/chunks/134-7f57497ff58ae12d.js",
       "static/chunks/main-app-515b2478b5348b2d.js",
       "static/chunks/app/api/hymns/route-55eccd003322e256.js"
-    ],
-    "/layout": [
-      "static/chunks/webpack-77c89213cfc54f05.js",
-      "static/chunks/cff928f3-26766f4ecd043e64.js",
-      "static/chunks/134-7f57497ff58ae12d.js",
-      "static/chunks/main-app-515b2478b5348b2d.js",
-      "static/css/c6a194fa911a41c2.css",
-      "static/chunks/74-b3b1b63cf40ec385.js",
-      "static/chunks/app/layout-e6db718768304e74.js"
     ],
     "/control/hymn/page": [
       "static/chunks/webpack-77c89213cfc54f05.js",
